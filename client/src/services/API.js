@@ -1,4 +1,4 @@
-const URL = import.meta.env.VITE_SERVER_ORIGIN
+const URL = import.meta.env.VITE_SERVER_ORIGIN+"/api/"
 // const URL = "http://localhost:8001/api/"
 import axios from "axios"
 
