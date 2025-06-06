@@ -2,54 +2,9 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Phone, Video, MoreVertical, Send, Paperclip, Smile } from "lucide-react"
-// import type { Contact } from "@/components/main-interface"
+import { Phone, Video, MoreVertical, Send, Paperclip, Smile, ArrowBigLeftIcon, ArrowLeft } from "lucide-react"
 
-// interface ChatViewProps {
-//   contact: Contact
-//   onStartCall: (contact: Contact, type: "audio" | "video") => void
-// }
-
-// interface Message {
-//   id: string
-//   content: string
-//   sender: "me" | "contact"
-//   timestamp: string
-//   status?: "sent" | "delivered" | "read"
-// }
-
-// const mockMessages = [
-//   {
-//     id: "1",
-//     content: "Hey! How are you doing?",
-//     sender: "contact",
-//     timestamp: "2:25 PM",
-//     status: "read",
-//   },
-//   {
-//     id: "2",
-//     content: "I'm doing great! Just finished a big project at work. How about you?",
-//     sender: "me",
-//     timestamp: "2:27 PM",
-//     status: "read",
-//   },
-//   {
-//     id: "3",
-//     content: "That sounds awesome! I'd love to hear more about it",
-//     sender: "contact",
-//     timestamp: "2:30 PM",
-//     status: "read",
-//   },
-//   {
-//     id: "4",
-//     content: "Let's catch up over coffee this weekend?",
-//     sender: "me",
-//     timestamp: "2:32 PM",
-//     status: "delivered",
-//   },
-// ]
-
-export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages }) {
+export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages,setIsSidebarOpen }) {
   const [newMessage, setNewMessage] = useState("")
 
   const handleSendMessage = (e) => {
@@ -91,6 +46,7 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
       <div className="p-4 border-b border-[#E8CBC0]/30 bg-gradient-to-r from-[#E8CBC0]/10 to-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <ArrowLeft className="text-[#636FA4]" onClick={() => setIsSidebarOpen(true)} />
             <Avatar className="w-10 h-10">
               <AvatarImage src={contact.avatar || "/placeholder.svg"} />
               <AvatarFallback className="bg-[#E8CBC0]/50 text-[#636FA4] font-medium">
@@ -116,6 +72,7 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
               <Phone className="w-5 h-5" />
             </Button>
             <Button
+              disabled
               variant="ghost"
               size="icon"
               onClick={() => onStartCall(contact, "video")}
@@ -123,13 +80,13 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
             >
               <Video className="w-5 h-5" />
             </Button>
-            <Button
+            {/* <Button
               variant="ghost"
               size="icon"
               className="h-10 w-10 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/30"
             >
               <MoreVertical className="w-5 h-5" />
-            </Button>
+            </Button> */}
           </div>
         </div>
       </div>
@@ -169,6 +126,7 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
       <div className="p-4 border-t border-[#E8CBC0]/30 bg-white">
         <form onSubmit={handleSendMessage} className="flex items-center gap-3">
           <Button
+            disabled  
             type="button"
             variant="ghost"
             size="icon"
@@ -184,14 +142,14 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
               onChange={(e) => setNewMessage(e.target.value)}
               className="pr-12 h-12 border-[#E8CBC0] focus:border-[#636FA4] rounded-full bg-[#E8CBC0]/10 focus:bg-white"
             />
-            <Button
+            {/* <Button
               type="button"
               variant="ghost"
               size="icon"
               className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/20"
             >
               <Smile className="w-4 h-4" />
-            </Button>
+            </Button> */}
           </div>
 
           <Button

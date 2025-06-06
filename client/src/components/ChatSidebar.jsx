@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, MessageCircle, MoreVertical, RefreshCcw } from "lucide-react"
+import { Search, Plus, MessageCircle, MoreVertical, RefreshCcw, Sidebar } from "lucide-react"
 
 // interface ChatSidebarProps {
 //   contacts: Contact[]
@@ -14,7 +14,7 @@ import { Search, Plus, MessageCircle, MoreVertical, RefreshCcw } from "lucide-re
 //   onAddContact: () => void
 // }
 
-export function ChatSidebar({ contacts, selectedContact, onSelectContact, onAddContact }) {
+export function ChatSidebar({ contacts, selectedContact, onSelectContact, onAddContact,fetchContacts,userId,setIsSidebarOpen,isSidebarOpen }) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredContacts = contacts.filter((contact) => contact.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -44,7 +44,7 @@ export function ChatSidebar({ contacts, selectedContact, onSelectContact, onAddC
   }
 
   return (
-    <div className="w-80 bg-white border-r border-[#E8CBC0]/50 flex flex-col">
+    <div className={`${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} w-[100%] transition-all duration-300 absolute z-10 h-screen bg-white border-r border-[#E8CBC0]/50 flex flex-col`}>
       {/* Header */}
       <div className="p-4 border-b border-[#E8CBC0]/30 bg-gradient-to-r from-[#E8CBC0]/20 to-white">
         <div className="flex items-center justify-between mb-4">
@@ -64,12 +64,20 @@ export function ChatSidebar({ contacts, selectedContact, onSelectContact, onAddC
               <Plus className="w-4 h-4" />
             </Button>
             <Button
-              // onClick={}
+              onClick={() => fetchContacts(userId)}
               variant="ghost"
               size="icon"
               className="h-9 w-9 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/30"
             >
               <RefreshCcw className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => setIsSidebarOpen(false)}
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/30"
+            >
+              <Sidebar className="w-4 h-4" />
             </Button>
           </div>
         </div>

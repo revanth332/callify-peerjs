@@ -7,67 +7,7 @@ import { VideoCallScreen } from "@/components/VideoCallScreen"
 import { IncomingCallScreen } from "@/components/IncomingCallScreen"
 import {Peer} from 'peerjs';
 import API from "@/services/API"
-import { Loader } from "lucide-react"
-
-// export interface Contact {
-//   id: string
-//   name: string
-//   phoneNumber: string
-//   avatar?: string
-//   status: "online" | "offline" | "typing"
-//   lastSeen?: string
-//   lastMessage?: string
-//   lastMessageTime?: string
-//   unreadCount?: number
-// }
-
-// export type CallState = "none" | "audio" | "video" | "incoming-audio" | "incoming-video"
-
-// const mockContacts = [
-//   {
-//     id: "1",
-//     name: "Sarah Johnson",
-//     phoneNumber: "+1234567890",
-//     status: "online",
-//     lastMessage: "Hey! How are you doing?",
-//     lastMessageTime: "2:30 PM",
-//     unreadCount: 2,
-//   },
-//   {
-//     id: "2",
-//     name: "Mike Chen",
-//     phoneNumber: "+1234567891",
-//     status: "typing",
-//     lastMessage: "See you tomorrow!",
-//     lastMessageTime: "1:45 PM",
-//   },
-//   {
-//     id: "3",
-//     name: "Emily Davis",
-//     phoneNumber: "+1234567892",
-//     status: "offline",
-//     lastSeen: "Last seen 1 hour ago",
-//     lastMessage: "Thanks for the help",
-//     lastMessageTime: "12:15 PM",
-//   },
-//   {
-//     id: "4",
-//     name: "Alex Rodriguez",
-//     phoneNumber: "+1234567893",
-//     status: "online",
-//     lastMessage: "Perfect! Let's do it",
-//     lastMessageTime: "11:30 AM",
-//   },
-//   {
-//     id: "5",
-//     name: "Lisa Wang",
-//     phoneNumber: "+1234567894",
-//     status: "offline",
-//     lastSeen: "Last seen yesterday",
-//     lastMessage: "Good night!",
-//     lastMessageTime: "Yesterday",
-//   },
-// ]
+import { Loader, MessageCircle } from "lucide-react"
 
 export function MainInterface({userInfo}) {
   const [contacts, setContacts] = useState([]);
@@ -78,9 +18,8 @@ export function MainInterface({userInfo}) {
   const [messages, setMessages] = useState([]);
   const [waiting,setWaiting] = useState(false);
   const [callStatus, setCallStatus] = useState("connecting")
+  const [isSidebarOpen,setIsSidebarOpen] = useState(true);
 
-
-  // const [recieverPeerId,setRecieverPeerId] = useState("");
   const peerInstance = useRef(null);
   const connectionRef = useRef(null);
   const audioCallRef = useRef(null);
@@ -97,14 +36,26 @@ export function MainInterface({userInfo}) {
       console.log("incoming call",call.metadata.name);
       const contact = contacts.find(item => item.name === call.metadata.name);
       if(contact){
+        setCallState("audio");
         call.on("close",() => {
+          console.log("reciever call close")
           handleEndCall();
         })
-        setCallState("incoming-audio");
+        console.log(audioCallRef);
+        call.on("stream",(remoteAudioStream) => {
+          console.log("answer recieved",audioCallRef);
+          if(audioCallRef.current){
+            audioCallRef.current.srcObject = remoteAudioStream;
+          }
+          else{
+            console.error("No audio element found")
+          }
+        })
         peerCallRef.current = call;
         handleIncomingCall(contact,call.metadata.type);
       }
     })
+
     peer.on("error", (err) => {
       console.error("PeerJS error:", err);
       // Common errors: 'peer-unavailable', 'socket-error', 'network', 'webrtc'
@@ -125,7 +76,7 @@ export function MainInterface({userInfo}) {
       const proceed = window.confirm(`Do you want to connect with ${conn.metadata.name}`)
         if(proceed){
             const contact = contacts.find(item => item.name === conn.metadata.name);
-            console.log(contacts,contact);
+            setIsSidebarOpen(false);
             setSelectedContact(contact);
 
             conn.on("open", (data) => {
@@ -221,13 +172,14 @@ export function MainInterface({userInfo}) {
     const result = await API.get.getPeerId(contact._id)
     const call = peerInstance.current.call(result.peerId,audioStream,{metadata : {name:userInfo.name,type:"audio"}});
     peerCallRef.current = call;
-    console.log(audioCallRef)
+    console.log(audioCallRef);
     call.on("stream",(remoteAudioStream) => {
       console.log("answer recieved",audioCallRef);
       setCallStatus("connected");
       audioCallRef.current.srcObject = remoteAudioStream;
     })
     call.on("close",() => {
+      console.log("sender call close")
       handleEndCall();
     })
     setCallingContact(contact);
@@ -239,28 +191,43 @@ export function MainInterface({userInfo}) {
     setCallingContact(null);
     peerCallRef.current.close();
     peerCallRef.current = null;
+    setCallStatus("connecting");
   }
 
   const handleIncomingCall = (contact, type) => {
-    setCallingContact(contact)
-    setCallState(type === "audio" ? "incoming-audio" : "incoming-video")
+    setCallingContact(contact);
+    setCallStatus(type === "audio" ? "incoming-audio" : "incoming-video")
   }
 
   const handleAcceptCall = async () => {
-    if (callState === "incoming-audio") {
+    if (callStatus === "incoming-audio") {
       const audioStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-      peerCallRef.current.answer(audioStream);
-      setCallState("audio");
       setCallStatus("connected");
-    } else if (callState === "incoming-video") {
+      peerCallRef.current.answer(audioStream);
+    } else if (callStatus === "incoming-video") {
       setCallState("video")
     }
   }
 
   const handleDeclineCall = () => {
     setCallState("none")
-    setCallingContact(null)
+    setCallingContact(null);
+    setCallStatus("connecting");
+    peerCallRef.current.close();
+    peerCallRef.current = null;
   }
+
+  const handleUserSelection = async (contact) => {
+    setIsSidebarOpen(false);
+    if(contact.status === "online"){
+      const result = await API.get.getPeerId(contact._id)
+      handlePeerConnection(result.peerId,contact);
+    }
+  }
+
+  useEffect(() => {
+    console.log("call state : ",callState)
+  },[callState])
 
   // Simulate incoming call for demo
   // const simulateIncomingCall = () => {
@@ -268,7 +235,8 @@ export function MainInterface({userInfo}) {
   // }
 
   if (callState === "audio" && callingContact) {
-    return <AudioCallScreen audioCallRef={audioCallRef} callStatus={callStatus} contact={callingContact} onEndCall={handleEndCall} />
+    return <AudioCallScreen audioCallRef={audioCallRef} callStatus={callStatus} contact={callingContact} onEndCall={handleEndCall} onAccept={handleAcceptCall}
+        onDecline={handleDeclineCall} />
   }
 
   if (callState === "video" && callingContact) {
@@ -280,18 +248,8 @@ export function MainInterface({userInfo}) {
       <IncomingCallScreen
         contact={callingContact}
         callType={callState === "incoming-audio" ? "audio" : "video"}
-        onAccept={handleAcceptCall}
-        onDecline={handleDeclineCall}
       />
     )
-  }
-
-  const handleUserSelection = async (contact) => {
-    console.log(contact);
-    if(contact.status === "online"){
-      const result = await API.get.getPeerId(contact._id)
-      handlePeerConnection(result.peerId,contact);
-    }
   }
 
   return (
@@ -302,14 +260,19 @@ export function MainInterface({userInfo}) {
         selectedContact={selectedContact}
         onSelectContact={handleUserSelection}
         onAddContact={() => setShowAddContact(true)}
+        fetchContacts={fetchContacts}
+        userId={userInfo._id}
+        setIsSidebarOpen={setIsSidebarOpen}
+        isSidebarOpen={isSidebarOpen}
       />
       {/* Main Chat Area */}
       <div className="flex-1">
         {selectedContact ? (
-          <ChatView messages={messages} setMessages={setMessages} sendMessage={sendMessage} contact={selectedContact} onStartCall={handleStartCall} />
+          <ChatView setIsSidebarOpen={setIsSidebarOpen} messages={messages} setMessages={setMessages} sendMessage={sendMessage} contact={selectedContact} onStartCall={handleStartCall} />
         ) : (
           waiting
           ? <div className="h-full flex items-center justify-center bg-white">
+            
             <div className="text-center text-gray-500">
               <div className="w-24 h-24 bg-[#E8CBC0]/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-4xl">💬</span>
@@ -318,7 +281,14 @@ export function MainInterface({userInfo}) {
               <p className="flex justify-center text-[#636FA4]"><Loader className="animate-spin" /></p>
             </div>
           </div>
-          : <div className="h-full flex items-center justify-center bg-white">
+          : <>
+              <div className="h-[6%] p-3 flex items-center">
+              <div onClick={() => setIsSidebarOpen(true)} className="w-10 h-10 bg-[#636FA4] rounded-full flex items-center justify-center shadow-md">
+                  <MessageCircle className="w-5 h-5 text-white" />
+              </div>
+              <span className="text-[#636FA4] ml-2 text-lg font-semibold">Callify</span>
+            </div>
+            <div className="h-[94%] flex items-center justify-center bg-white">
             <div className="text-center text-gray-500">
               <div className="w-24 h-24 bg-[#E8CBC0]/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-4xl">💬</span>
@@ -327,6 +297,7 @@ export function MainInterface({userInfo}) {
               <p className="text-sm text-gray-600 mb-4">Choose from your existing conversations or start a new one</p>
             </div>
           </div>
+            </>
         )}
       </div>
 
