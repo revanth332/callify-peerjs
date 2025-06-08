@@ -3,18 +3,21 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MessageCircle, Phone } from "lucide-react"
+import { Loader2, MessageCircle, Phone } from "lucide-react"
 
 
 export function LoginScreen({ onLogin }) {
   const [fullName, setFullName] = useState("Revanth")
   const [phoneNumber, setPhoneNumber] = useState("9959965916")
   const [countryCode, setCountryCode] = useState("+1")
+  const [isLoading,setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     if (fullName && phoneNumber) {
-      onLogin(fullName,phoneNumber)
+      setIsLoading(true);
+      await onLogin(fullName,phoneNumber);
+      setIsLoading(false);
     }
   }
 
@@ -82,9 +85,10 @@ export function LoginScreen({ onLogin }) {
 
             <Button
               type="submit"
-              className="w-full h-12 bg-[#636FA4] hover:bg-[#5a6396] text-white font-medium rounded-xl transition-colors shadow-lg"
+              disabled={isLoading}
+              className={`w-full h-12 ${isLoading && "cursor-not-allowed"} bg-[#636FA4] hover:bg-[#5a6396] text-white font-medium rounded-xl transition-colors shadow-lg`}
             >
-              Continue
+              {isLoading ? <Loader2 className="animate-spin"/> : "Continue"}
             </Button>
           </form>
 

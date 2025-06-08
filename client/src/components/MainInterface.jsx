@@ -8,6 +8,7 @@ import { IncomingCallScreen } from "@/components/IncomingCallScreen"
 import {Peer} from 'peerjs';
 import API from "@/services/API"
 import { Loader, MessageCircle } from "lucide-react"
+import { toast } from "sonner"
 
 export function MainInterface({userInfo}) {
   const [contacts, setContacts] = useState([]);
@@ -19,10 +20,16 @@ export function MainInterface({userInfo}) {
   const [waiting,setWaiting] = useState(false);
   const [callStatus, setCallStatus] = useState("connecting")
   const [isSidebarOpen,setIsSidebarOpen] = useState(true);
+  const [remoteVideoStream,setRemoteVideoStream] = useState(null);
+  const [isAudioAllowed,setIsAudioAllowed] = useState(true);
+  const [isMuted, setIsMuted] = useState(false)
+  // const [facingMode,setFacingMode]
 
   const peerInstance = useRef(null);
   const connectionRef = useRef(null);
   const audioCallRef = useRef(null);
+  const localVideoRef = useRef(null);
+  const remoteVideoRef = useRef(null);
   const peerCallRef = useRef(null);
 
   useEffect(() => {
@@ -36,16 +43,21 @@ export function MainInterface({userInfo}) {
       console.log("incoming call",call.metadata.name);
       const contact = contacts.find(item => item.name === call.metadata.name);
       if(contact){
-        setCallState("audio");
+        setCallState(call.metadata.type);
         call.on("close",() => {
           console.log("reciever call close")
           handleEndCall();
         })
         console.log(audioCallRef);
         call.on("stream",(remoteAudioStream) => {
-          console.log("answer recieved",audioCallRef);
-          if(audioCallRef.current){
-            audioCallRef.current.srcObject = remoteAudioStream;
+          console.log("answer recieved",remoteVideoRef);
+          if(call.metadata.type === "audio"){
+            if(audioCallRef.current){
+              audioCallRef.current.srcObject = remoteAudioStream;
+            }
+          }
+          else if(call.metadata.type === "video"){
+            setRemoteVideoStream(remoteAudioStream);
           }
           else{
             console.error("No audio element found")
@@ -71,35 +83,75 @@ export function MainInterface({userInfo}) {
   peer.on("close", () => {
     console.log("Peer connection completely closed (e.g., by calling peer.destroy()).");
   });
+  
     peer.on("connection",(conn) => {
       console.log(conn)
-      const proceed = window.confirm(`Do you want to connect with ${conn.metadata.name}`)
-        if(proceed){
-            const contact = contacts.find(item => item.name === conn.metadata.name);
-            setIsSidebarOpen(false);
-            setSelectedContact(contact);
+      // const proceed = window.confirm(`Do you want to connect with ${conn.metadata.name}`);
+      toast("New connection request", {
+          description: conn.metadata.name + " wants to connect with you",
+          action: {
+            label: "Accept",
+            onClick: () => {
+              const contact = contacts.find(item => item.name === conn.metadata.name);
+              setIsSidebarOpen(false);
+              setSelectedContact(contact);
 
-            conn.on("open", (data) => {
-              console.log("connection created",data);
-            });
+              conn.on("open", (data) => {
+                console.log("connection created",data);
+              });
 
-              conn.on("data", (data) => {
-                const message = {
-                  id: Date.now().toString(),
-                  content: data,
-                  sender: "contact",
-                  timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                  status: "read",
-                }
-              setMessages(prev => [...prev,message]);
-            });
+                conn.on("data", (data) => {
+                  const dataObj = JSON.parse(data);
+                  if(dataObj.type === "text"){
+                      const message = {
+                      id: Date.now().toString(),
+                      content: data,
+                      sender: "contact",
+                      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                      status: "read",
+                    }
+                    setMessages(prev => [...prev,message]);
+                  }
+                  else if(dataObj.type === "mute"){
+                      setIsAudioAllowed(!dataObj.value);
+                  }
+              });
 
-            conn.on("close",()=> {
-              console.log("closed")
-            })
+              conn.on("close",()=> {
+                console.log("closed")
+              })
 
-            connectionRef.current = conn;
-      }
+              connectionRef.current = conn;
+            },
+            className: "bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded-md transition",
+          },
+        })
+      //   if(proceed){
+      //                 const contact = contacts.find(item => item.name === conn.metadata.name);
+      //       setIsSidebarOpen(false);
+      //       setSelectedContact(contact);
+
+      //       conn.on("open", (data) => {
+      //         console.log("connection created",data);
+      //       });
+
+      //         conn.on("data", (data) => {
+      //           const message = {
+      //             id: Date.now().toString(),
+      //             content: data,
+      //             sender: "contact",
+      //             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      //             status: "read",
+      //           }
+      //         setMessages(prev => [...prev,message]);
+      //       });
+
+      //       conn.on("close",()=> {
+      //         console.log("closed")
+      //       })
+
+      //       connectionRef.current = conn;
+      // }
     })
     
     peerInstance.current = peer;
@@ -116,6 +168,10 @@ export function MainInterface({userInfo}) {
   useEffect(() => {
     fetchContacts(userInfo._id);
   },[userInfo._id]);
+
+  useEffect(() => {
+    console.log(isAudioAllowed,"kl")
+  },[isAudioAllowed])
 
   const fetchContacts = async (userId) => {
     try{
@@ -137,14 +193,21 @@ export function MainInterface({userInfo}) {
         setSelectedContact(contact);
       })
       connection.on("data",(data) => {
-        const message = {
-                id: Date.now().toString(),
-                content: data,
-                sender: "contact",
-                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                status: "read",
-              }
-              setMessages(prev => [...prev,message])
+        const dataObj = JSON.parse(data);
+        if(dataObj.type === "text"){
+          const message = {
+              id: Date.now().toString(),
+              content: dataObj.value,
+              sender: "contact",
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              status: "read",
+            }
+          setMessages(prev => [...prev,message])
+        }
+
+        else if(dataObj.type === "mute"){
+          setIsAudioAllowed(!dataObj.value);
+        }
       })
     connectionRef.current = connection;
     }
@@ -154,7 +217,7 @@ export function MainInterface({userInfo}) {
   }
 
   const sendMessage = (text) => {
-    connectionRef.current.send(text);
+    connectionRef.current.send(JSON.stringify({type:"text",value : text}));
   }
 
   const handleAddContact = (newContact) => {
@@ -168,15 +231,20 @@ export function MainInterface({userInfo}) {
   }
 
   const handleStartCall = async (contact, type) => {
-    const audioStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-    const result = await API.get.getPeerId(contact._id)
-    const call = peerInstance.current.call(result.peerId,audioStream,{metadata : {name:userInfo.name,type:"audio"}});
+    const mediaStream = await navigator.mediaDevices.getUserMedia({ video: type === "video" ? {facingMode : "user"} : false, audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
+        } });
+    const result = await API.get.getPeerId(contact._id);
+    const call = peerInstance.current.call(result.peerId,mediaStream,{metadata : {name:userInfo.name,type}});
     peerCallRef.current = call;
     console.log(audioCallRef);
-    call.on("stream",(remoteAudioStream) => {
+    call.on("stream",(remoteStream) => {
       console.log("answer recieved",audioCallRef);
       setCallStatus("connected");
-      audioCallRef.current.srcObject = remoteAudioStream;
+      if(type === "audio") audioCallRef.current.srcObject = remoteStream;
+      else if(type === "video") setRemoteVideoStream(remoteStream);
     })
     call.on("close",() => {
       console.log("sender call close")
@@ -184,7 +252,29 @@ export function MainInterface({userInfo}) {
     })
     setCallingContact(contact);
     setCallState(type);
+    console.log("local",localVideoRef);
   }
+  
+  useEffect(() => {
+    const streamLocalVideo = async () => {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: {facingMode : "user"}, audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
+        } });
+      localVideoRef.current.srcObject = mediaStream;
+    }
+    if(callState === "video" && callStatus === "connected"){
+      streamLocalVideo();
+    }
+  },[callState,callStatus])
+
+  useEffect(() => {
+    console.log("remote",remoteVideoRef)
+    if(remoteVideoStream){
+      remoteVideoRef.current.srcObject = remoteVideoStream;
+    }
+  },[remoteVideoStream,remoteVideoRef.current])
 
   const handleEndCall = () => {
     setCallState("none");
@@ -192,6 +282,19 @@ export function MainInterface({userInfo}) {
     peerCallRef.current.close();
     peerCallRef.current = null;
     setCallStatus("connecting");
+    if(callState === "video"){
+      setRemoteVideoStream(null);
+    }
+  }
+
+  const handleRemoteStreamMute = () => {
+    setIsMuted(prev => {
+      const muteValue = !prev;
+      console.log(muteValue);
+      connectionRef.current.send(JSON.stringify({type:"mute",value : muteValue}));
+      return muteValue;
+    })
+    
   }
 
   const handleIncomingCall = (contact, type) => {
@@ -201,11 +304,21 @@ export function MainInterface({userInfo}) {
 
   const handleAcceptCall = async () => {
     if (callStatus === "incoming-audio") {
-      const audioStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+      const audioStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
+        } });
       setCallStatus("connected");
       peerCallRef.current.answer(audioStream);
     } else if (callStatus === "incoming-video") {
-      setCallState("video")
+      const audioStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
+        } });
+      setCallStatus("connected");
+      peerCallRef.current.answer(audioStream);
     }
   }
 
@@ -236,21 +349,22 @@ export function MainInterface({userInfo}) {
 
   if (callState === "audio" && callingContact) {
     return <AudioCallScreen audioCallRef={audioCallRef} callStatus={callStatus} contact={callingContact} onEndCall={handleEndCall} onAccept={handleAcceptCall}
-        onDecline={handleDeclineCall} />
+        onDecline={handleDeclineCall} handleRemoteStreamMute={handleRemoteStreamMute} isMuted={isMuted} setIsMuted={setIsMuted} isAudioAllowed={isAudioAllowed} />
   }
 
   if (callState === "video" && callingContact) {
-    return <VideoCallScreen contact={callingContact} onEndCall={handleEndCall} />
+    return <VideoCallScreen localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} contact={callingContact} onEndCall={handleEndCall}  onAccept={handleAcceptCall}
+        onDecline={handleDeclineCall} callStatus={callStatus} handleRemoteStreamMute={handleRemoteStreamMute} isMuted={isMuted} setIsMuted={setIsMuted} isAudioAllowed={isAudioAllowed} />
   }
 
-  if ((callState === "incoming-audio" || callState === "incoming-video") && callingContact) {
-    return (
-      <IncomingCallScreen
-        contact={callingContact}
-        callType={callState === "incoming-audio" ? "audio" : "video"}
-      />
-    )
-  }
+  // if ((callState === "incoming-audio" || callState === "incoming-video") && callingContact) {
+  //   return (
+  //     <IncomingCallScreen
+  //       contact={callingContact}
+  //       callType={callState === "incoming-audio" ? "audio" : "video"}
+  //     />
+  //   )
+  // }
 
   return (
     <div className="h-screen bg-[#E8CBC0]/10 flex">

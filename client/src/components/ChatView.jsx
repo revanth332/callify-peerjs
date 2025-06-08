@@ -72,7 +72,6 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
               <Phone className="w-5 h-5" />
             </Button>
             <Button
-              disabled
               variant="ghost"
               size="icon"
               onClick={() => onStartCall(contact, "video")}

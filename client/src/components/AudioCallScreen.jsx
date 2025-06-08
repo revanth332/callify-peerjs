@@ -5,9 +5,9 @@ import { PhoneOff, Mic, MicOff, Volume2, VolumeX, MessageSquare, Phone, Video} f
 import {  } from "lucide-react"
 
 
-export function AudioCallScreen({ contact, onEndCall,callStatus,audioCallRef,onAccept, onDecline }) {
+export function AudioCallScreen({ contact, onEndCall,callStatus,audioCallRef,onAccept, onDecline,handleRemoteStreamMute,isMuted,isAudioAllowed}) {
   const [callDuration, setCallDuration] = useState(0)
-  const [isMuted, setIsMuted] = useState(false)
+  // const [isMuted, setIsMuted] = useState(false)
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
   const callType = callStatus.includes("audio") ? "audio" : "video";
   const [isRinging, setIsRinging] = useState(true);
@@ -39,7 +39,7 @@ export function AudioCallScreen({ contact, onEndCall,callStatus,audioCallRef,onA
 
   return (
     <div className="h-screen bg-gradient-to-br from-[#636FA4] to-[#5a6396] flex flex-col items-center justify-center text-white relative overflow-hidden">
-      <audio ref={audioCallRef} autoPlay></audio>
+      <audio ref={audioCallRef} muted={isAudioAllowed} autoPlay></audio>
       
       {
         (callStatus === "incoming-audio" || callStatus === "incoming-video")
@@ -180,7 +180,7 @@ export function AudioCallScreen({ contact, onEndCall,callStatus,audioCallRef,onA
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsMuted(!isMuted)}
+            onClick={() => handleRemoteStreamMute()}
             className={`w-16 h-16 rounded-full border-2 border-white/30 hover:bg-white/20 ${
               isMuted ? "bg-red-500/80 border-red-400" : "bg-white/10"
             }`}
