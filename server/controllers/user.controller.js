@@ -30,6 +30,24 @@ export async function login(req, res) {
     }
 }
 
+export async function logout(req, res) {
+    try {
+        const { userId } = req.body;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        user.status = "offline";
+        user.peerId = "";
+        await user.save();
+        return res.status(200).json({ message: 'Logout successful' });
+    }
+    catch(err){
+        console.log(err);
+        return res.status(500).json({message : "Internal server error"})
+    }
+}
+
 export async function getPeerId(req,res){
     try{
         const {userId} = req.query;

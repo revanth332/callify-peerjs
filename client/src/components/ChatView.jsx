@@ -1,19 +1,40 @@
-import { useState } from "react"
+import { useState,useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Phone, Video, MoreVertical, Send, Paperclip, Smile, ArrowBigLeftIcon, ArrowLeft } from "lucide-react"
+import { Phone, Video, MoreVertical, Send, Paperclip, Smile, ArrowBigLeftIcon, ArrowLeft, File, Download, FileIcon,FileAudio,Image } from "lucide-react";
+import CircularProgressBar from "./ui/circular-progress-bar";
 
-export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages,setIsSidebarOpen }) {
-  const [newMessage, setNewMessage] = useState("")
+export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages,sendFile,uploadingStatus,sendingFileId,closeChat}) {
+  const [newMessage, setNewMessage] = useState("");
+  const fileRef = useRef(null);
+  const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    // Scroll to the bottom of the messages when they change
+    if (messagesEndRef.current && messages.length > 0) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages]);
 
   const handleSendMessage = (e) => {
     try{
       e.preventDefault()
       if (!newMessage.trim()) return
 
+      // const message = {
+      //   id: Date.now().toString(),
+      //   type:"file",
+      //   fileId : Date.now().toString(),
+      //   content: newMessage,
+      //   fileSize:"123.4kb",
+      //   sender: "me",
+      //   timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      //   status: "sent",
+      // }
       const message = {
         id: Date.now().toString(),
+        type: "text",
         content: newMessage,
         sender: "me",
         timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -27,6 +48,15 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
       console.log(err);
     }
 
+  }
+
+  const downloadFile = (fileUrl,name) => {
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   const getStatusIndicator = () => {
@@ -46,7 +76,7 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
       <div className="p-4 border-b border-[#E8CBC0]/30 bg-gradient-to-r from-[#E8CBC0]/10 to-white">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <ArrowLeft className="text-[#636FA4]" onClick={() => setIsSidebarOpen(true)} />
+            <ArrowLeft className="text-[#636FA4]" onClick={() => closeChat()} />
             <Avatar className="w-10 h-10">
               <AvatarImage src={contact.avatar || "/placeholder.svg"} />
               <AvatarFallback className="bg-[#E8CBC0]/50 text-[#636FA4] font-medium">
@@ -101,31 +131,82 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
                   : "bg-white text-gray-900 rounded-bl-md shadow-sm border border-[#E8CBC0]/30"
               }`}
             >
-              <p className="text-sm">{message.content}</p>
+              {
+                message.type === "text"
+                ? <p className="text-sm">{message.content}</p>
+                : <div className="flex gap-2 p-2">
+                  <div className="border-r pr-1 flex justify-center items-center">
+                    {
+                      message.content.includes(".mp4") || message.content.includes(".mov")
+                      ? <Video className="h-10 w-10" />
+                      : message.content.includes(".mp3") || message.content.includes(".wav")
+                        ? <FileAudio className="h-10 w-10" />
+                        : message.content.includes(".pdf")
+                          ? <File className="h-10 w-10" />
+                          : message.content.includes(".jpg") || message.content.includes(".png") || message.content.includes(".jpeg")
+                            ? <Image src={message.fileUrl} alt={message.content} className="h-10 w-10 object-cover rounded-md" />
+                            : message.content.includes(".docx") || message.content.includes(".xlsx")
+                              ? <FileIcon className="h-10 w-10" />
+                              : <FileIcon className="h-10 w-10" /> // Default icon for other file types
+                    }
+                  </div>
+                  <div className="w-full flex gap-2">
+                    <div className="w-[130px]">
+                      <p className="text-ellipsis overflow-hidden text-nowrap">{message.content}</p>
+                
+                      
+                      <p>{message.fileSize}</p>
+                    </div>
+                    <div className="flex justify-center items-center">
+                      {
+                        sendingFileId === message.fileId && <CircularProgressBar value={uploadingStatus} size="sm" color="green" />
+                      }
+                    </div>
+                  </div>
+                  {message.fileUrl && <div>
+                    <Download onClick={() => downloadFile(message.fileUrl,message.content)} />
+                  </div>
+                  }
+                  </div>
+              }
               <div
-                className={`flex items-center justify-end gap-1 mt-1 ${
+                className={`flex flex-col items-end justify-center gap-1 mt-1 ${
                   message.sender === "me" ? "text-gray-200" : "text-gray-500"
                 }`}
               >
+                <div className="flex justify-center w-full">
+                  {message.fileUrl && (
+                        message.content.includes(".mp4") || message.content.includes(".mov")
+                        ? <video src={message.fileUrl} controls className="object-cover rounded-md" />
+                        : message.content.includes(".mp3") || message.content.includes(".wav")
+                          ? <audio src={message.fileUrl} controls className="object-cover rounded-md" />
+                          : message.content.includes(".jpg") || message.content.includes(".png") || message.content.includes(".jpeg")
+                            ? <img src={message.fileUrl} alt={message.content} className="object-cover rounded-md" />
+                            : message.content
+                        )
+                  }
+                </div>
+
                 <span className="text-xs">{message.timestamp}</span>
-                {message.sender === "me" && (
+                {/* {message.sender === "me" && (
                   <div className="flex">
                     {message.status === "sent" && <span className="text-xs">✓</span>}
                     {message.status === "delivered" && <span className="text-xs">✓✓</span>}
                     {message.status === "read" && <span className="text-xs text-[#E8CBC0]">✓✓</span>}
                   </div>
-                )}
+                )} */}
               </div>
             </div>
           </div>
         ))}
+        <p ref={messagesEndRef}></p>
       </div>
 
       {/* Message Input */}
       <div className="p-4 border-t border-[#E8CBC0]/30 bg-white">
         <form onSubmit={handleSendMessage} className="flex items-center gap-3">
           <Button
-            disabled  
+            onClick={() => fileRef.current.click()}
             type="button"
             variant="ghost"
             size="icon"
@@ -133,6 +214,12 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
           >
             <Paperclip className="w-5 h-5" />
           </Button>
+            <input
+              type="file"
+              className="hidden"
+              ref={fileRef}
+              onChange={(e) => sendFile(e.target.files[0])}
+            />
 
           <div className="flex-1 relative">
             <Input
@@ -141,14 +228,14 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
               onChange={(e) => setNewMessage(e.target.value)}
               className="pr-12 h-12 border-[#E8CBC0] focus:border-[#636FA4] rounded-full bg-[#E8CBC0]/10 focus:bg-white"
             />
-            {/* <Button
+            <Button
               type="button"
               variant="ghost"
               size="icon"
               className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/20"
             >
               <Smile className="w-4 h-4" />
-            </Button> */}
+            </Button>
           </div>
 
           <Button

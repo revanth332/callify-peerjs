@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, MessageCircle, MoreVertical, RefreshCcw, Sidebar } from "lucide-react"
+import { Search, Plus, MessageCircle, MoreVertical, RefreshCcw, Sidebar, Power } from "lucide-react"
 
 // interface ChatSidebarProps {
 //   contacts: Contact[]
@@ -14,7 +14,7 @@ import { Search, Plus, MessageCircle, MoreVertical, RefreshCcw, Sidebar } from "
 //   onAddContact: () => void
 // }
 
-export function ChatSidebar({ contacts, selectedContact, onSelectContact, onAddContact,fetchContacts,userId,setIsSidebarOpen,isSidebarOpen }) {
+export function ChatSidebar({ contacts, selectedContact, onSelectContact, onAddContact,fetchContacts,userId,setIsSidebarOpen,isSidebarOpen,onLogout }) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredContacts = contacts.filter((contact) => contact.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -58,10 +58,10 @@ export function ChatSidebar({ contacts, selectedContact, onSelectContact, onAddC
             <Button
               variant="ghost"
               size="icon"
-              onClick={onAddContact}
+              onClick={onLogout}
               className="h-9 w-9 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/30"
             >
-              <Plus className="w-4 h-4" />
+              <Power className="w-4 h-4 text-red-500" />
             </Button>
             <Button
               onClick={() => fetchContacts(userId)}
@@ -96,6 +96,16 @@ export function ChatSidebar({ contacts, selectedContact, onSelectContact, onAddC
 
       {/* Contact List */}
       <div className="flex-1 overflow-y-auto">
+
+        <div className="absolute bottom-5 right-5 p-3 bg-[#636FA4] rounded-full flex items-center justify-center">
+          <button
+              onClick={onAddContact}
+              className="text-white"
+            >
+              <Plus className="w-full h-full" />
+            </button>
+        </div>
+
         {filteredContacts.map((contact) => (
           <div
             key={contact._id}

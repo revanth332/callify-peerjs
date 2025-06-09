@@ -5,14 +5,15 @@ import axios from "axios"
 const API = {
     post : {
         login : async function(name,phone){
-            console.log("api")
             const result = await axios.post(URL+"user/login",{name,phone});
             return result.data;
         },
+        logout : async function(userId){
+            await axios.post(URL+"user/logout",{userId});
+        }
     },
     get : {
         getPeerId : async function(userId){
-            console.log("api")
             const result = await axios.get(URL+"user/peerId?userId="+userId);
             return result.data;
         },

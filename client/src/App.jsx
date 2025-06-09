@@ -63,7 +63,7 @@
 
 // export default App
 
-import { useState } from "react"
+import { useState,useEffect } from "react"
 import { LoginScreen } from "@/components/LoginScreen"
 import { MainInterface } from "@/components/MainInterface"
 import API from "./services/API";
@@ -72,11 +72,19 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userInfo,setUserInfo] = useState();
 
+  useEffect(() => {
+    const localUserInfo = localStorage.getItem("userInfo");
+    if (localUserInfo) {
+      setUserInfo(JSON.parse(localUserInfo));
+      setIsLoggedIn(true);
+    }
+  },[]);
+
   const handleLogin = async (name,phone) => {
     try{
-      console.log("logging")
       const result = await API.post.login(name,phone);
       console.log(result.user);
+      localStorage.setItem("userInfo", JSON.stringify(result.user));
       setUserInfo(result.user)
       setIsLoggedIn(true)
     }
@@ -85,9 +93,22 @@ export default function App() {
     }
   }
 
+  const handleLogout = async () => {
+    try{
+      await API.post.logout(userInfo._id);
+      localStorage.removeItem("userInfo");
+      setUserInfo(null);
+      setIsLoggedIn(false);
+    }
+    catch(err){
+      console.log(err);
+    }
+
+  }
+
   if (!isLoggedIn) {
     return <LoginScreen onLogin={handleLogin} />
   }
 
-  return <MainInterface userInfo={userInfo} />
+  return <MainInterface userInfo={userInfo} onLogout={handleLogout} />
 }

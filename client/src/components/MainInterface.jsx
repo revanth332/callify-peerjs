@@ -10,7 +10,7 @@ import API from "@/services/API"
 import { Loader, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
 
-export function MainInterface({userInfo}) {
+export function MainInterface({userInfo,onLogout}) {
   const [contacts, setContacts] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
   const [showAddContact, setShowAddContact] = useState(false)
@@ -22,7 +22,9 @@ export function MainInterface({userInfo}) {
   const [isSidebarOpen,setIsSidebarOpen] = useState(true);
   const [remoteVideoStream,setRemoteVideoStream] = useState(null);
   const [isAudioAllowed,setIsAudioAllowed] = useState(true);
-  const [isMuted, setIsMuted] = useState(false)
+  const [isMuted, setIsMuted] = useState(false);
+  const [uploadingStatus, setUploadingStatus] = useState(0);
+  const [sendingFileId, setSendingFileId] = useState(null);
   // const [facingMode,setFacingMode]
 
   const peerInstance = useRef(null);
@@ -31,6 +33,7 @@ export function MainInterface({userInfo}) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerCallRef = useRef(null);
+  const fileBufferRef = useRef(null);
 
   useEffect(() => {
     const peer = new Peer(userInfo.peerId);
@@ -95,25 +98,60 @@ export function MainInterface({userInfo}) {
               const contact = contacts.find(item => item.name === conn.metadata.name);
               setIsSidebarOpen(false);
               setSelectedContact(contact);
-
+              conn.send(JSON.stringify({type:"con-status",value:true}));
               conn.on("open", (data) => {
                 console.log("connection created",data);
               });
 
                 conn.on("data", (data) => {
-                  const dataObj = JSON.parse(data);
-                  if(dataObj.type === "text"){
-                      const message = {
-                      id: Date.now().toString(),
-                      content: data,
-                      sender: "contact",
-                      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                      status: "read",
+                  if(typeof data === "string"){
+                    const dataObj = JSON.parse(data);
+                    if(dataObj.type === "text"){
+                        const message = {
+                        id: Date.now().toString(),
+                        type : "text",
+                        content: dataObj.value,
+                        sender: "contact",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                        status: "read",
+                      }
+                      setMessages(prev => [...prev,message]);
                     }
-                    setMessages(prev => [...prev,message]);
+                    else if(dataObj.type === "call-status"){
+                      console.log("call ended by sender")
+                      if(dataObj.value === false){
+                        console.log("call ended by sender")
+                        handleEndCall();
+                      }
+                    }
+                    else if(dataObj.type === "mute"){
+                        setIsAudioAllowed(!dataObj.value);
+                    }
+                    else if(dataObj.type === "end-chat"){
+                      closeChat();
+                    }
+                    else if(dataObj.type === "file-eof"){
+                        const blob = new Blob(fileBufferRef.current);
+                        const fileUrl = URL.createObjectURL(blob);
+                        const message = {
+                          id: Date.now().toString(),
+                          type:"file",
+                          content: dataObj.name,
+                          fileSize : (blob.size / 1024).toFixed(2) > 1024 ? ((blob.size / 1024)/1024).toFixed(2) + " MB" : (blob.size / 1024).toFixed(2) + " KB",
+                          sender: "contact",
+                          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                          status: "read",
+                          fileUrl: fileUrl,
+                        }
+                        setMessages(prev => [...prev,message]);
+                        fileBufferRef.current = [];
+                    }
                   }
-                  else if(dataObj.type === "mute"){
-                      setIsAudioAllowed(!dataObj.value);
+                  else{
+                    if(!fileBufferRef.current){
+                      fileBufferRef.current = [];
+                    }
+                    fileBufferRef.current.push(data);
                   }
               });
 
@@ -126,32 +164,6 @@ export function MainInterface({userInfo}) {
             className: "bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded-md transition",
           },
         })
-      //   if(proceed){
-      //                 const contact = contacts.find(item => item.name === conn.metadata.name);
-      //       setIsSidebarOpen(false);
-      //       setSelectedContact(contact);
-
-      //       conn.on("open", (data) => {
-      //         console.log("connection created",data);
-      //       });
-
-      //         conn.on("data", (data) => {
-      //           const message = {
-      //             id: Date.now().toString(),
-      //             content: data,
-      //             sender: "contact",
-      //             timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      //             status: "read",
-      //           }
-      //         setMessages(prev => [...prev,message]);
-      //       });
-
-      //       conn.on("close",()=> {
-      //         console.log("closed")
-      //       })
-
-      //       connectionRef.current = conn;
-      // }
     })
     
     peerInstance.current = peer;
@@ -169,9 +181,9 @@ export function MainInterface({userInfo}) {
     fetchContacts(userInfo._id);
   },[userInfo._id]);
 
-  useEffect(() => {
-    console.log(isAudioAllowed,"kl")
-  },[isAudioAllowed])
+  // useEffect(() => {
+  //   console.log(isAudioAllowed,"kl")
+  // },[isAudioAllowed])
 
   const fetchContacts = async (userId) => {
     try{
@@ -188,26 +200,73 @@ export function MainInterface({userInfo}) {
       console.log("connection started",peerId)
       const connection = peerInstance.current.connect(peerId,{metadata : {name:userInfo.name}});
       setWaiting(true); 
-      connection.on("open",() => {
+      const requestTimeoutId = setTimeout(() => {
         setWaiting(false);
-        setSelectedContact(contact);
-      })
+        setIsSidebarOpen(true);
+        toast.error("Connection timed out. Please try again later.");
+      },10000)
+      // connection.on("open",() => {
+      //   setWaiting(false);
+      //   setSelectedContact(contact);
+      // })
       connection.on("data",(data) => {
-        const dataObj = JSON.parse(data);
-        if(dataObj.type === "text"){
-          const message = {
+        if(typeof data === "string"){
+          const dataObj = JSON.parse(data);
+          if(dataObj.type === "text"){
+            const message = {
+                id: Date.now().toString(),
+                type: "text",
+                content: dataObj.value,
+                sender: "contact",
+                timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                status: "read",
+            }
+            setMessages(prev => [...prev,message])
+          }
+          else if(dataObj.type === "con-status"){
+            if(dataObj.value){
+              clearTimeout(requestTimeoutId);
+              setWaiting(false);
+              setSelectedContact(contact);
+            }
+          }
+          else if(dataObj.type === "call-status"){
+            console.log("call ended by sender");
+            if(dataObj.value === false){
+              console.log("call ended by sender")
+              handleEndCall();
+            }
+          }
+          else if(dataObj.type === "mute"){
+            setIsAudioAllowed(!dataObj.value);
+          }
+          else if(dataObj.type === "end-chat"){
+            closeChat();
+          }
+          else if(dataObj.type === "file-eof"){
+            const blob = new Blob(fileBufferRef.current);
+            const fileUrl = URL.createObjectURL(blob);
+            const message = {
               id: Date.now().toString(),
-              content: dataObj.value,
+              type:"file",
+              content: dataObj.name,
+              fileSize : (blob.size / 1024).toFixed(2) > 1024 ? ((blob.size / 1024)/1024).toFixed(2) + " MB" : (blob.size / 1024).toFixed(2) + " KB",
               sender: "contact",
               timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
               status: "read",
+              fileUrl: fileUrl,
             }
-          setMessages(prev => [...prev,message])
+            setMessages(prev => [...prev,message]);
+            fileBufferRef.current = [];
+          }
+        }
+        else{
+          if(!fileBufferRef.current){
+            fileBufferRef.current = [];
+          }
+          fileBufferRef.current.push(data);
         }
 
-        else if(dataObj.type === "mute"){
-          setIsAudioAllowed(!dataObj.value);
-        }
       })
     connectionRef.current = connection;
     }
@@ -323,6 +382,7 @@ export function MainInterface({userInfo}) {
   }
 
   const handleDeclineCall = () => {
+    connectionRef.current.send(JSON.stringify({type:"call-status",value : false}))
     setCallState("none")
     setCallingContact(null);
     setCallStatus("connecting");
@@ -331,16 +391,153 @@ export function MainInterface({userInfo}) {
   }
 
   const handleUserSelection = async (contact) => {
-    setIsSidebarOpen(false);
     if(contact.status === "online"){
+      setIsSidebarOpen(false);
       const result = await API.get.getPeerId(contact._id)
       handlePeerConnection(result.peerId,contact);
     }
+    else{
+      toast.error("User is offline. Please try again later.");
+    }
   }
 
-  useEffect(() => {
-    console.log("call state : ",callState)
-  },[callState])
+  const closeChat = () => {
+    setSelectedContact(null);
+    setIsSidebarOpen(true);
+    if (connectionRef.current) {
+      connectionRef.current.send(JSON.stringify({type:"end-chat",value : true}))
+      connectionRef.current.close();
+      connectionRef.current = null;
+    }
+    setMessages([]);
+    fileBufferRef.current = [];
+  }
+
+    const sendFile = (file) => {
+    if (!connectionRef.current) {
+        console.error("Connection is not open or not available.");
+        toast.error("Connection is not available. Please try again later.");
+        setUploadingStatus(0);
+        return;
+    }
+
+    console.log("Attempting to send file:", file.name, "size:", file.size);
+    const messageId = Date.now().toString();
+    const fileId = Date.now().toString() + file.name;
+    setSendingFileId(fileId);
+    setMessages((prev) => [...prev, {
+              id: Date.now().toString(),
+              type:"file",
+              fileId : fileId,
+              fileSize : (file.size / 1024) > 1024 ? ((file.size / 1024)/1024).toFixed(2) + " MB" : (file.size / 1024).toFixed(2) + " KB",
+              content: file.name,
+              sender: "me",
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              status: "read",
+            }]);
+
+    const reader = new FileReader();
+    let offset = 0;
+    const chunkSize = 16384; // 16KB. This is a good default. Max SCTP message size is often larger, but 16KB is safe.
+    // Max RTCDataChannel message size can be up to 256KB or more for ArrayBuffers on some browsers, but SCTP itself fragments.
+    // However, the internal buffer we are concerned about is different.
+
+    // Configure bufferedAmountLowThreshold on your data channel, ideally when it's created.
+    // This threshold tells the browser when to fire the 'bufferedamountlow' event.
+    // A common value is a fraction of the typical max buffer (e.g. 1MB if max buffer is 16MB).
+    // If not set, it defaults to 0, meaning the event fires only when the buffer is empty.
+    // For this example, let's assume it's set, or we can set it here if the DC is new.
+    // Example: dataChannelRef.current.bufferedAmountLowThreshold = 256 * 1024; // 256KB
+
+    const sendNextChunk = () => {
+        // Check if we need to wait for the buffer to drain
+        // The HIGH_WATER_MARK should be significantly less than the absolute max buffer of the browser's SCTP stack (often ~16MB).
+        // Using 1MB-4MB is a reasonable high water mark to pause sending.
+        const HIGH_WATER_MARK = 1 * 1024 * 1024; // 1 MB
+
+        if (connectionRef.current.bufferedAmount > HIGH_WATER_MARK) {
+            console.log(`Buffer high (${connectionRef.current.bufferedAmount} bytes). Pausing send. Waiting for 'bufferedamountlow'.`);
+            connectionRef.current.onbufferedamountlow = () => {
+                // Clean up the event listener once it fires
+                connectionRef.current.onbufferedamountlow = null;
+                console.log("Buffer drained. Resuming send.");
+                sendNextChunk(); // Retry sending the current chunk
+            };
+            return; // Exit and wait for the event
+        }
+
+        // If current chunk data is available from reader.onload, send it
+        if (reader.readyState === FileReader.LOADING) {
+            // This should ideally not happen if logic is correct, means we called sendNextChunk before onload
+            console.warn("FileReader still loading, waiting a bit.");
+            setTimeout(sendNextChunk, 50); // Small delay and retry
+            return;
+        }
+        
+        // If reader.result has data (meaning onload fired for the current slice)
+        if (reader.result && reader.result.byteLength > 0) {
+            try {
+                connectionRef.current.send(reader.result); // reader.result is the ArrayBuffer
+                offset += reader.result.byteLength;
+                setUploadingStatus((offset / file.size) * 100);
+            } catch (e) {
+                console.error("Error sending chunk:", e);
+                // If 'send queue is full' error occurs here, it means our HIGH_WATER_MARK check
+                // wasn't enough or something filled the buffer very quickly between the check and send().
+                // The 'bufferedamountlow' logic should eventually recover if it was temporary.
+                // For persistent errors, you might need to abort.
+                setMessages((prev) => prev.map(msg => msg.messageId === messageId ? {...msg,content : `Error sending ${file.name}`, status: "error"} : msg));
+                setUploadingStatus(0); // Abort on send error
+                return;
+            }
+        }
+
+        // Check if more chunks to read and send
+        if (offset < file.size) {
+            readSlice(offset); // Read the next slice, which will trigger reader.onload, then sendNextChunk
+        } else {
+            console.log("Finished sending all chunks for:", file.name);
+            try {
+                connectionRef.current.send(JSON.stringify({ type: 'file-eof', name: file.name }));
+                setSendingFileId(null);
+            } catch (e) {
+                console.error("Failed to send EOF:", e);
+            }
+            setUploadingStatus(100); // Or 0 to reset
+            // Consider setting uploadingStatus to 0 after a short delay or on acknowledgment from receiver
+            setTimeout(() => setUploadingStatus(0), 2000);
+        }
+    };
+
+    reader.onload = ( ) => {
+        // event.target.result contains the ArrayBuffer of the chunk
+        // console.log(`Loaded chunk: offset=${offset}, size=${event.target.result.byteLength}`);
+        // Now that the chunk is loaded, try to send it.
+        // sendNextChunk will handle buffer checks.
+        sendNextChunk();
+    };
+
+    reader.onerror = (error) => {
+        console.error("FileReader error:", error);
+        setMessages((prev) => prev.map(msg => msg.messageId === messageId ? {...msg,content : `Error sending ${file.name}`, status: "error"} : msg));
+        setUploadingStatus(0);
+    };
+
+    const readSlice = (o) => {
+        // console.log(`Reading slice at offset: ${o}`);
+        const slice = file.slice(o, o + chunkSize);
+        reader.readAsArrayBuffer(slice);
+        // The actual sending will happen in reader.onload -> sendNextChunk
+    };
+
+    // Start the process
+        setUploadingStatus(0.1); // Indicate start, slightly above 0
+        readSlice(offset); // Start reading the first chunk
+  };
+
+  // useEffect(() => {
+  //   console.log("call state : ",callState)
+  // },[callState])
 
   // Simulate incoming call for demo
   // const simulateIncomingCall = () => {
@@ -378,11 +575,12 @@ export function MainInterface({userInfo}) {
         userId={userInfo._id}
         setIsSidebarOpen={setIsSidebarOpen}
         isSidebarOpen={isSidebarOpen}
+        onLogout={onLogout}
       />
       {/* Main Chat Area */}
       <div className="flex-1">
         {selectedContact ? (
-          <ChatView setIsSidebarOpen={setIsSidebarOpen} messages={messages} setMessages={setMessages} sendMessage={sendMessage} contact={selectedContact} onStartCall={handleStartCall} />
+          <ChatView closeChat={closeChat} sendingFileId={sendingFileId} uploadingStatus={uploadingStatus} sendFile={sendFile} messages={messages} setMessages={setMessages} sendMessage={sendMessage} contact={selectedContact} onStartCall={handleStartCall} />
         ) : (
           waiting
           ? <div className="h-full flex items-center justify-center bg-white">
