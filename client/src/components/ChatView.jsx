@@ -4,9 +4,16 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Phone, Video, MoreVertical, Send, Paperclip, Smile, ArrowBigLeftIcon, ArrowLeft, File, Download, FileIcon,FileAudio,Image } from "lucide-react";
 import CircularProgressBar from "./ui/circular-progress-bar";
+import EmojiPicker from 'emoji-picker-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages,sendFile,uploadingStatus,sendingFileId,closeChat}) {
   const [newMessage, setNewMessage] = useState("");
+  const [isEmojiModelOpen, setIsEmojiModelOpen] = useState(false);
   const fileRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -58,6 +65,11 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
     link.click();
     document.body.removeChild(link);
   }
+
+  const handleEmojiClick = (emojiObject) => {
+    setNewMessage((prevMessage) => prevMessage + emojiObject.emoji);
+    // setIsPickerOpen(false);
+  };
 
   const getStatusIndicator = () => {
     switch (contact.status) {
@@ -201,7 +213,9 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
         ))}
         <p ref={messagesEndRef}></p>
       </div>
-
+        {isEmojiModelOpen && <div className="absolute flex justify-center w-full bottom-16 py-3 z-50">
+              <EmojiPicker onEmojiClick={handleEmojiClick} />
+        </div>}
       {/* Message Input */}
       <div className="p-4 border-t border-[#E8CBC0]/30 bg-white">
         <form onSubmit={handleSendMessage} className="flex items-center gap-3">
@@ -228,14 +242,33 @@ export function ChatView({ contact, onStartCall,sendMessage,messages,setMessages
               onChange={(e) => setNewMessage(e.target.value)}
               className="pr-12 h-12 border-[#E8CBC0] focus:border-[#636FA4] rounded-full bg-[#E8CBC0]/10 focus:bg-white"
             />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/20"
-            >
-              <Smile className="w-4 h-4" />
-            </Button>
+            {/* <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/20"
+                >
+                  <Smile className="w-4 h-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-full bottom-5 p-0">
+                <div className="w-full">
+                <EmojiPicker onEmojiClick={handleEmojiClick} />
+                </div>
+              </PopoverContent>
+            </Popover> */}
+
+                <Button
+                  onClick={() => setIsEmojiModelOpen(!isEmojiModelOpen)}
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 text-[#636FA4] hover:text-[#636FA4] hover:bg-[#E8CBC0]/20"
+                >
+                  <Smile className="w-4 h-4" />
+                </Button>
           </div>
 
           <Button
