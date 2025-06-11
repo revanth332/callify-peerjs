@@ -6,7 +6,6 @@ import admin from "../utils/firebaseAdmin.js";
 export async function login(req, res) {
     try {
         const { name, phone } = req.body;
-        console.log(name,phone)
 
         // Check if user already exists
         let user = await User.findOne({ name });
@@ -82,7 +81,6 @@ export async function getContacts(req,res){
 export async function setNotificationRegistrationToken(req, res) {
     try {
         const { userId, notificationRegistrationToken } = req.body;
-        console.log(userId, notificationRegistrationToken);
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -115,7 +113,6 @@ export async function requestUserConnection(req,res){
         //     return res.status(401).json({ message: 'Unauthorized' });
         // });
         const user = await User.findById(userId);
-        console.log(user)
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -124,12 +121,13 @@ export async function requestUserConnection(req,res){
             title: 'New Connection Request',
             body: `${user.name} has requested to connect with you.`,
             },
-            // data: data || {},
+            data: {
+                url : process.env.CLIENT_ORIGIN
+            },
             // link:process.env.CLIENT_ORIGIN,
             token: user.notificationRegistrationToken,
         };
         const response = await admin.messaging().send(message);
-        console.log('Successfully sent message:', response);
         return res.status(200).json({ success: true, messageId: response.messageId });   
     }
     catch(err){

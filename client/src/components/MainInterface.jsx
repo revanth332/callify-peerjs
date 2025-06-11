@@ -38,22 +38,18 @@ export function MainInterface({userInfo,onLogout}) {
   useEffect(() => {
     const peer = new Peer(userInfo.peerId);
     
-    peer.on("open",(id) => {
-      console.log("peer id ",id);
+    peer.on("open",() => {
+      // console.log("peer id ",id);
     })
 
     peer.on("call",async (call) => {
-      console.log("incoming call",call.metadata.name);
       const contact = contacts.find(item => item.name === call.metadata.name);
       if(contact){
         setCallState(call.metadata.type);
         call.on("close",() => {
-          console.log("reciever call close")
           handleEndCall();
         })
-        console.log(audioCallRef);
         call.on("stream",(remoteAudioStream) => {
-          console.log("answer recieved",remoteVideoRef);
           if(call.metadata.type === "audio"){
             if(audioCallRef.current){
               audioCallRef.current.srcObject = remoteAudioStream;
@@ -88,7 +84,6 @@ export function MainInterface({userInfo,onLogout}) {
   });
   
     peer.on("connection",(conn) => {
-      console.log(conn)
       // const proceed = window.confirm(`Do you want to connect with ${conn.metadata.name}`);
       toast("New connection request", {
           description: conn.metadata.name + " wants to connect with you",
@@ -99,8 +94,8 @@ export function MainInterface({userInfo,onLogout}) {
               setIsSidebarOpen(false);
               setSelectedContact(contact);
               conn.send(JSON.stringify({type:"con-status",value:true}));
-              conn.on("open", (data) => {
-                console.log("connection created",data);
+              conn.on("open", () => {
+                // console.log("connection created",data);
               });
 
                 conn.on("data", (data) => {
@@ -118,9 +113,8 @@ export function MainInterface({userInfo,onLogout}) {
                       setMessages(prev => [...prev,message]);
                     }
                     else if(dataObj.type === "call-status"){
-                      console.log("call ended by sender")
                       if(dataObj.value === false){
-                        console.log("call ended by sender")
+                        // console.log("call ended by sender")
                         handleEndCall();
                       }
                     }
@@ -199,7 +193,7 @@ export function MainInterface({userInfo,onLogout}) {
 
   const handlePeerConnection = async (peerId,contact) => {
     try{
-      console.log("connection started",peerId)
+      // console.log("connection started",peerId)
       const connection = peerInstance.current.connect(peerId,{metadata : {name:userInfo.name}});
       setWaiting(true);
       await API.post.requestUserConnection(contact._id);
@@ -234,9 +228,9 @@ export function MainInterface({userInfo,onLogout}) {
             }
           }
           else if(dataObj.type === "call-status"){
-            console.log("call ended by sender");
+            // console.log("call ended by sender");
             if(dataObj.value === false){
-              console.log("call ended by sender")
+              // console.log("call ended by sender")
               handleEndCall();
             }
           }
@@ -301,20 +295,16 @@ export function MainInterface({userInfo,onLogout}) {
     const result = await API.get.getPeerId(contact._id);
     const call = peerInstance.current.call(result.peerId,mediaStream,{metadata : {name:userInfo.name,type}});
     peerCallRef.current = call;
-    console.log(audioCallRef);
     call.on("stream",(remoteStream) => {
-      console.log("answer recieved",audioCallRef);
       setCallStatus("connected");
       if(type === "audio") audioCallRef.current.srcObject = remoteStream;
       else if(type === "video") setRemoteVideoStream(remoteStream);
     })
     call.on("close",() => {
-      console.log("sender call close")
       handleEndCall();
     })
     setCallingContact(contact);
     setCallState(type);
-    console.log("local",localVideoRef);
   }
   
   useEffect(() => {
@@ -332,7 +322,6 @@ export function MainInterface({userInfo,onLogout}) {
   },[callState,callStatus])
 
   useEffect(() => {
-    console.log("remote",remoteVideoRef)
     if(remoteVideoStream){
       remoteVideoRef.current.srcObject = remoteVideoStream;
     }
@@ -353,7 +342,6 @@ export function MainInterface({userInfo,onLogout}) {
   const handleRemoteStreamMute = () => {
     setIsMuted(prev => {
       const muteValue = !prev;
-      console.log(muteValue);
       connectionRef.current.send(JSON.stringify({type:"mute",value : muteValue}));
       return muteValue;
     })
@@ -425,7 +413,7 @@ export function MainInterface({userInfo,onLogout}) {
         return;
     }
 
-    console.log("Attempting to send file:", file.name, "size:", file.size);
+    // console.log("Attempting to send file:", file.name, "size:", file.size);
     const messageId = Date.now().toString();
     const fileId = Date.now().toString() + file.name;
     setSendingFileId(fileId);
@@ -460,11 +448,10 @@ export function MainInterface({userInfo,onLogout}) {
         const HIGH_WATER_MARK = 1 * 1024 * 1024; // 1 MB
 
         if (connectionRef.current.bufferedAmount > HIGH_WATER_MARK) {
-            console.log(`Buffer high (${connectionRef.current.bufferedAmount} bytes). Pausing send. Waiting for 'bufferedamountlow'.`);
+            // console.log(`Buffer high (${connectionRef.current.bufferedAmount} bytes). Pausing send. Waiting for 'bufferedamountlow'.`);
             connectionRef.current.onbufferedamountlow = () => {
                 // Clean up the event listener once it fires
                 connectionRef.current.onbufferedamountlow = null;
-                console.log("Buffer drained. Resuming send.");
                 sendNextChunk(); // Retry sending the current chunk
             };
             return; // Exit and wait for the event
@@ -500,7 +487,7 @@ export function MainInterface({userInfo,onLogout}) {
         if (offset < file.size) {
             readSlice(offset); // Read the next slice, which will trigger reader.onload, then sendNextChunk
         } else {
-            console.log("Finished sending all chunks for:", file.name);
+            // console.log("Finished sending all chunks for:", file.name);
             try {
                 connectionRef.current.send(JSON.stringify({ type: 'file-eof', name: file.name }));
                 setSendingFileId(null);
@@ -593,7 +580,7 @@ export function MainInterface({userInfo,onLogout}) {
               <div className="w-24 h-24 bg-[#E8CBC0]/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-4xl">💬</span>
               </div>
-              <h3 className="text-lg font-medium mb-2 text-[#636FA4]"> Waiting for Dharma to accept connection request </h3>
+              <h3 className="text-lg font-medium mb-2 text-[#636FA4]"> Waiting for user to accept connection request </h3>
               <p className="flex justify-center text-[#636FA4]"><Loader className="animate-spin" /></p>
             </div>
           </div>

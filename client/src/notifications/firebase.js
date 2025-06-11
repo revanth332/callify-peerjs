@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getMessaging, getToken } from "firebase/messaging";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA_DslGh8qQzS7zEzkitzSwxo4DU5EGkBg",
+  apiKey: import.meta.env.FIREBASE_API_KEY,
   authDomain: "callify-notifications.firebaseapp.com",
   projectId: "callify-notifications",
   storageBucket: "callify-notifications.firebasestorage.app",
@@ -16,7 +16,6 @@ export const messaging = getMessaging(app);
 
 export const generateToken = async () => {
     const permission = await Notification.requestPermission();
-    console.log(permission);
     if (permission !== "granted") {
         console.error("Permission not granted for Notification");
         return;

@@ -31,8 +31,47 @@ messaging.onBackgroundMessage((payload) => {
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: payload.notification.image
+    icon: payload.notification.image,
+    data : payload.data
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// --- Handle notification clicks ---
+self.addEventListener('notificationclick', (event) => {
+  // console.log('[firebase-messaging-sw.js] Notification clicked');
+
+  // Close the notification
+  event.notification.close();
+
+  // Get the URL from the data payload
+  const urlToOpen = event.notification.data?.url || '/'; // Default to root if no URL is provided
+
+  event.waitUntil(
+    // Get all window clients (tabs) controlled by this service worker
+    self.clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true // Important to include tabs not currently focused
+    }).then((clientList) => {
+      // Check if a tab with the target URL is already open
+      for (const client of clientList) {
+        // Use client.url.includes(urlToOpen) for partial match
+        // Or client.url === urlToOpen for exact match
+        // Ensure you account for protocol (http/https) and domain
+        // For relative paths, you might just check client.url.endsWith(urlToOpen)
+        if (client.url.includes(urlToOpen) && 'focus' in client) {
+          // If found, focus that tab
+          // console.log(`[firebase-messaging-sw.js] Focusing existing client for URL: ${urlToOpen}`);
+          return client.focus();
+        }
+      }
+
+      // If no matching client found, open a new window/tab
+      // console.log(`[firebase-messaging-sw.js] Opening new window for URL: ${urlToOpen}`);
+      return self.clients.openWindow(urlToOpen);
+    }).catch(error => {
+      console.error('[firebase-messaging-sw.js] Error handling notification click:', error);
+    })
+  );
 });

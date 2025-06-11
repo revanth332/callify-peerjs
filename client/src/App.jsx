@@ -29,9 +29,9 @@ export default function App() {
     try{
       const result = await API.post.login(name,phone);
       const notificationRegistrationToken = await generateToken();
-      console.log(notificationRegistrationToken);
+      // console.log(notificationRegistrationToken);
       await API.post.updateNotificationToken(result.user._id,notificationRegistrationToken);
-      console.log(result.user);
+      // console.log(result.user);
       localStorage.setItem("userInfo", JSON.stringify(result.user));
       setUserInfo(result.user)
       setIsLoggedIn(true)
