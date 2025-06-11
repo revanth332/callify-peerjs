@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import { v4 as uuidv4 } from 'uuid';
 import 'dotenv/config.js'
+import admin from "../utils/firebaseAdmin.js";
 
 export async function login(req, res) {
     try {
@@ -124,7 +125,7 @@ export async function requestUserConnection(req,res){
             body: `${user.name} has requested to connect with you.`,
             },
             // data: data || {},
-            link:process.env.CLIENT_ORIGIN,
+            // link:process.env.CLIENT_ORIGIN,
             token: user.notificationRegistrationToken,
         };
         const response = await admin.messaging().send(message);
