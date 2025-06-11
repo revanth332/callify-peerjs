@@ -1,5 +1,6 @@
 import User from "../models/user.model.js";
 import { v4 as uuidv4 } from 'uuid';
+import 'dotenv/config.js'
 
 export async function login(req, res) {
     try {
@@ -74,5 +75,64 @@ export async function getContacts(req,res){
     }
     catch(err){
         console.log(err);
+    }
+}
+
+export async function setNotificationRegistrationToken(req, res) {
+    try {
+        const { userId, notificationRegistrationToken } = req.body;
+        console.log(userId, notificationRegistrationToken);
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        user.notificationRegistrationToken = notificationRegistrationToken;
+        await user.save();
+        return res.status(200).json({ message: 'Notification registration token set successfully' });
+    }
+    catch(err){
+        console.log(err);
+        return res.status(500).json({message : "Internal server error"})
+    }
+}
+
+export async function requestUserConnection(req,res){
+    try{
+        const {userId} = req.body;
+        // const authHeader = req.headers.authorization;
+        // if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        //     return res.status(401).json({ message: 'Unauthorized' });
+        // }
+        // const idToken = authHeader.split(' ')[1];
+        // admin.auth().verifyIdToken(idToken)
+        // .then((decodedToken) => {
+        //     req.user = decodedToken;
+        //     next();
+        // })
+        // .catch((error) => {
+        //     console.error('Error verifying Firebase ID token:', error);
+        //     return res.status(401).json({ message: 'Unauthorized' });
+        // });
+        const user = await User.findById(userId);
+        console.log(user)
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        const message = {
+            notification: {
+            title: 'New Connection Request',
+            body: `${user.name} has requested to connect with you.`,
+            },
+            // data: data || {},
+            link:process.env.CLIENT_ORIGIN,
+            token: user.notificationRegistrationToken,
+        };
+        const response = await admin.messaging().send(message);
+        console.log('Successfully sent message:', response);
+        return res.status(200).json({ success: true, messageId: response.messageId });   
+    }
+    catch(err){
+        console.log(err);
+        return res.status(500).json({message : "Internal server error"})
     }
 }

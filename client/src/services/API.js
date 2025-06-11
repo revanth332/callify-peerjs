@@ -10,6 +10,12 @@ const API = {
         },
         logout : async function(userId){
             await axios.post(URL+"user/logout",{userId});
+        },
+        updateNotificationToken : async function(userId,notificationRegistrationToken){
+            await axios.post(URL+"user/add/notification/registrationToken",{userId,notificationRegistrationToken});
+        },
+        requestUserConnection : async function(userId){
+            await axios.post(URL+"user/request",{userId});
         }
     },
     get : {

@@ -16,6 +16,9 @@ const userSchema = new mongoose.Schema({
   peerId:{
     type:String,
   },
+  notificationRegistrationToken: {
+    type:String,
+  },
   contacts :{
     type : Array,
   }

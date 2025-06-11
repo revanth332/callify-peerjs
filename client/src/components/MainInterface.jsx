@@ -175,6 +175,8 @@ export function MainInterface({userInfo,onLogout}) {
         peerInstance.current = null;
       }
     };
+    
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   },[userInfo,contacts]);
 
   useEffect(() => {
@@ -195,11 +197,12 @@ export function MainInterface({userInfo,onLogout}) {
     }
     }
 
-  const handlePeerConnection = (peerId,contact) => {
+  const handlePeerConnection = async (peerId,contact) => {
     try{
       console.log("connection started",peerId)
       const connection = peerInstance.current.connect(peerId,{metadata : {name:userInfo.name}});
-      setWaiting(true); 
+      setWaiting(true);
+      await API.post.requestUserConnection(contact._id);
       const requestTimeoutId = setTimeout(() => {
         setWaiting(false);
         setIsSidebarOpen(true);
@@ -333,7 +336,8 @@ export function MainInterface({userInfo,onLogout}) {
     if(remoteVideoStream){
       remoteVideoRef.current.srcObject = remoteVideoStream;
     }
-  },[remoteVideoStream,remoteVideoRef.current])
+
+  },[remoteVideoStream])
 
   const handleEndCall = () => {
     setCallState("none");
