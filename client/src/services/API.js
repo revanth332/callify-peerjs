@@ -15,7 +15,8 @@ const API = {
             await axios.post(URL+"user/add/notification/registrationToken",{userId,notificationRegistrationToken});
         },
         requestUserConnection : async function(userId){
-            await axios.post(URL+"user/request",{userId});
+            const response = await axios.post(URL+"user/request",{userId});
+            return response.data;
         }
     },
     get : {

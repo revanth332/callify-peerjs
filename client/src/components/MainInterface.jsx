@@ -14,17 +14,22 @@ export function MainInterface({userInfo,onLogout}) {
   const [contacts, setContacts] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
   const [showAddContact, setShowAddContact] = useState(false)
-  const [callState, setCallState] = useState("none")
-  const [callingContact, setCallingContact] = useState(null);
+  const [callState, setCallState] = useState("video")
+  const [callingContact, setCallingContact] = useState({name : "Revanth",phone : "1234567890"});
   const [messages, setMessages] = useState([]);
   const [waiting,setWaiting] = useState(false);
-  const [callStatus, setCallStatus] = useState("connecting")
+  const [callStatus, setCallStatus] = useState("connected")
   const [isSidebarOpen,setIsSidebarOpen] = useState(true);
   const [remoteVideoStream,setRemoteVideoStream] = useState(null);
+  const [localVideoStream,setLocalVideoStream] = useState(null);
   const [isAudioAllowed,setIsAudioAllowed] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
   const [uploadingStatus, setUploadingStatus] = useState(0);
   const [sendingFileId, setSendingFileId] = useState(null);
+  const [isLocalVideoOn, setIsLocalVideoOn] = useState(true);
+  const [isRemoteVideoOn,setIsRemoteVideoOn] = useState(true);
+  const [isSwitchedVideos,setIsSwitchedVideos] = useState(false);
+  const [videoChatMessages,setVideoChatMessages] = useState([]);
   // const [facingMode,setFacingMode]
 
   const peerInstance = useRef(null);
@@ -140,6 +145,20 @@ export function MainInterface({userInfo,onLogout}) {
                         setMessages(prev => [...prev,message]);
                         fileBufferRef.current = [];
                     }
+                    else if(dataObj.type === "video-toggle"){
+                      setIsRemoteVideoOn(dataObj.value);
+                    }
+                    else if(dataObj.type === "video-chat"){
+                      const message = {
+                        id: Date.now().toString(),
+                        type: "text",
+                        content: dataObj.value,
+                        sender: "contact",
+                        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                        status: "read",
+                      }
+                      setVideoChatMessages(prev => [...prev,message]);
+                    }
                   }
                   else{
                     if(!fileBufferRef.current){
@@ -196,7 +215,10 @@ export function MainInterface({userInfo,onLogout}) {
       // console.log("connection started",peerId)
       const connection = peerInstance.current.connect(peerId,{metadata : {name:userInfo.name}});
       setWaiting(true);
-      await API.post.requestUserConnection(contact._id);
+      const response = await API.post.requestUserConnection(contact._id);
+      if(!response.success){
+        toast.error(response.message);
+      }
       const requestTimeoutId = setTimeout(() => {
         setWaiting(false);
         setIsSidebarOpen(true);
@@ -256,6 +278,20 @@ export function MainInterface({userInfo,onLogout}) {
             setMessages(prev => [...prev,message]);
             fileBufferRef.current = [];
           }
+          else if(dataObj.type === "video-toggle"){
+            setIsRemoteVideoOn(dataObj.value);
+          }
+          else if(dataObj.type === "video-chat"){
+            const message = {
+              id: Date.now().toString(),
+              type: "text",
+              content: dataObj.value,
+              sender: "contact",
+              timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              status: "read",
+            }
+            setVideoChatMessages(prev => [...prev,message]);
+          }
         }
         else{
           if(!fileBufferRef.current){
@@ -268,12 +304,35 @@ export function MainInterface({userInfo,onLogout}) {
     connectionRef.current = connection;
     }
     catch(err){
+      setWaiting(false);
       console.log(err);
     }
   }
 
   const sendMessage = (text) => {
     connectionRef.current.send(JSON.stringify({type:"text",value : text}));
+  }
+
+  const sendVideoChatMessage = (e) => {
+    console.log("sending video chat message",e.target.value);
+    setVideoChatMessages(prev => [...prev,{id:Date.now().toString(),type:"text",content:e.target.value,sender:"me",timestamp:new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),status:"read"}])
+    connectionRef.current.send(JSON.stringify({type:"video-chat",value : e.target.value}));
+    e.target.value = "";
+  }
+
+  const switchVideoStreams = () => {
+    setIsSwitchedVideos(prev => !prev)
+    if (localVideoStream && remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = localVideoStream;
+    }
+    if (remoteVideoStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = remoteVideoStream;
+    }
+  }
+
+  const handleLocalVideoToggle = () => {
+    connectionRef.current.send(JSON.stringify({type:"video-toggle",value : !isLocalVideoOn}));
+    setIsLocalVideoOn(!isLocalVideoOn);
   }
 
   const handleAddContact = (newContact) => {
@@ -314,7 +373,8 @@ export function MainInterface({userInfo,onLogout}) {
           echoCancellation: true,
           autoGainControl: true,
         } });
-      localVideoRef.current.srcObject = mediaStream;
+      // localVideoRef.current.srcObject = mediaStream;
+      setLocalVideoStream(mediaStream);
     }
     if(callState === "video" && callStatus === "connected"){
       streamLocalVideo();
@@ -327,6 +387,12 @@ export function MainInterface({userInfo,onLogout}) {
     }
 
   },[remoteVideoStream])
+
+  useEffect(() => {
+    if(localVideoStream && localVideoRef.current){
+      localVideoRef.current.srcObject = localVideoStream;
+    }
+  },[localVideoStream])
 
   const handleEndCall = () => {
     setCallState("none");
@@ -526,14 +592,6 @@ export function MainInterface({userInfo,onLogout}) {
         readSlice(offset); // Start reading the first chunk
   };
 
-  // useEffect(() => {
-  //   console.log("call state : ",callState)
-  // },[callState])
-
-  // Simulate incoming call for demo
-  // const simulateIncomingCall = () => {
-  //   handleIncomingCall(contacts[1], "audio")
-  // }
 
   if (callState === "audio" && callingContact) {
     return <AudioCallScreen audioCallRef={audioCallRef} callStatus={callStatus} contact={callingContact} onEndCall={handleEndCall} onAccept={handleAcceptCall}
@@ -542,7 +600,9 @@ export function MainInterface({userInfo,onLogout}) {
 
   if (callState === "video" && callingContact) {
     return <VideoCallScreen localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} contact={callingContact} onEndCall={handleEndCall}  onAccept={handleAcceptCall}
-        onDecline={handleDeclineCall} callStatus={callStatus} handleRemoteStreamMute={handleRemoteStreamMute} isMuted={isMuted} setIsMuted={setIsMuted} isAudioAllowed={isAudioAllowed} />
+        onDecline={handleDeclineCall} callStatus={callStatus} handleRemoteStreamMute={handleRemoteStreamMute} isMuted={isMuted} setIsMuted={setIsMuted} isAudioAllowed={isAudioAllowed}
+        isLocalVideoOn={isLocalVideoOn} isRemoteVideoOn={isRemoteVideoOn} handleLocalVideoToggle={handleLocalVideoToggle} switchVideoStreams={switchVideoStreams} isSwitchedVideos={isSwitchedVideos}
+        sendVideoChatMessage={sendVideoChatMessage} videoChatMessages={videoChatMessages} />
   }
 
   // if ((callState === "incoming-audio" || callState === "incoming-video") && callingContact) {
