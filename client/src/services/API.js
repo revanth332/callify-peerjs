@@ -17,6 +17,9 @@ const API = {
         requestUserConnection : async function(userId){
             const response = await axios.post(URL+"user/request",{userId});
             return response.data;
+        },
+        changeStatus : async function(userId,status){
+            await axios.post(URL+"user/status/change",{userId,status})
         }
     },
     get : {

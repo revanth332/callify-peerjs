@@ -45,8 +45,6 @@ export function VideoCallScreen({
   const [offset,setOffset] = useState({x:0,y:0});
   const videoChatsEndRef = useRef(null);
 
-  console.log(contact,userInfo)
-
   const myProfilePic = useCallback(() => {
     return getProfilePic(userInfo.gender)
   },[userInfo.gender])

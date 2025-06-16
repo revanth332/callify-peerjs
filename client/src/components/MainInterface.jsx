@@ -31,7 +31,8 @@ export function MainInterface({userInfo,onLogout}) {
   const [isSwitchedVideos,setIsSwitchedVideos] = useState(false);
   const [videoChatMessages,setVideoChatMessages] = useState([]);
   const [showVideoChat,setShowVideoChat] = useState(false);
-  const [unreadVideoChatMessagesCount,setUnreadVideoChatMessagesCount] = useState(0)
+  const [unreadVideoChatMessagesCount,setUnreadVideoChatMessagesCount] = useState(0);
+  // const [userStatus,setUserStatus] = useState("")
   // const [facingMode,setFacingMode]
 
   const peerInstance = useRef(null);
@@ -41,6 +42,25 @@ export function MainInterface({userInfo,onLogout}) {
   const remoteVideoRef = useRef(null);
   const peerCallRef = useRef(null);
   const fileBufferRef = useRef(null);
+
+  // useEffect(() => {
+  //   const changeUserStatus = async (status) => {
+  //     await API.post.changeStatus(userInfo._id,status);
+  //   }
+  //   let timoutId;
+  //   if(userStatus === "offline"){
+  //     setUserStatus("online");
+  //     changeUserStatus();
+  //   }
+  //   timoutId = setTimeout(() => {
+  //       console.log("offline");
+  //       setUserStatus("offline")
+  //     },[10000])
+
+  //   return () => {
+  //     clearTimeout(timoutId)
+  //   }
+  // })
 
   useEffect(() => {
     const peer = new Peer(userInfo.peerId);
