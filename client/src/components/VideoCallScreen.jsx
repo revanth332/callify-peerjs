@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Video, VideoOff, Mic, MicOff, PhoneOff, RotateCcw, MessageSquare, Maximize2, Minimize2,Phone } from "lucide-react";
 import ReactDOM from 'react-dom';
 import Draggable from 'react-draggable';
+import { getProfilePic } from "@/lib/utils";
 
 // interface VideoCallScreenProps {
 //   contact: Contact
@@ -27,7 +28,11 @@ export function VideoCallScreen({
   switchVideoStreams,
   isSwitchedVideos,
   videoChatMessages,
-  sendVideoChatMessage
+  sendVideoChatMessage,
+  showVideoChat,
+  setShowVideoChat,
+  unreadVideoChatMessagesCount,
+  userInfo
 }) {
   const [callDuration, setCallDuration] = useState(0)
   // const [isFullscreen, setIsFullscreen] = useState(false);
@@ -38,8 +43,17 @@ export function VideoCallScreen({
   const [isDragging, setIsDragging] = useState(false);
   const [position,setPosition] = useState({x:-1,y:-1});
   const [offset,setOffset] = useState({x:0,y:0});
-  const [showVideoChat,setShowVideoChat] = useState(false);
   const videoChatsEndRef = useRef(null);
+
+  console.log(contact,userInfo)
+
+  const myProfilePic = useCallback(() => {
+    return getProfilePic(userInfo.gender)
+  },[userInfo.gender])
+
+  const contactProfilePic = useCallback(() => {
+    return getProfilePic(contact.gender)
+  },[contact.gender])
 
   const callType = callStatus.includes("audio") ? "audio" : "video";
 
@@ -137,7 +151,7 @@ export function VideoCallScreen({
     };
   },[isDragging,handleDragMove,handleDragStop])
 
-  const formatDuration = (seconds) => { 
+  const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60)
     const secs = seconds % 60
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
@@ -345,21 +359,21 @@ export function VideoCallScreen({
           <div className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 z-20 w-full ${showActions ? "block" : "hidden"}`}>
             <div className="flex flex-col justify-center gap-4 bg-black/50 backdrop-blur-sm rounded-t-2xl px-6 py-4 border border-white/20">
             {showVideoChat && <div className="max-h-[200px] overflow-y-auto">
-              {videoChatMessages.map((msg, index) => <div key={index} className="flex items-center gap-2 mb-2">
+              {videoChatMessages.map((msg, index) => <div key={index} className={`flex items-center gap-2 mb-2 ${msg.sender === "me" && "flex-row-reverse"}`}>
                   <div className="flex items-center justify-center">
                     <Avatar className="border-4 border-white/20">
-                          <AvatarImage src={contact.avatar || "/placeholder.svg"} />
+                          <AvatarImage key={index} src={msg.sender === "me" ? myProfilePic() : contactProfilePic()} />
                           <AvatarFallback className="bg-[#E8CBC0] text-[#636FA4] text-sm font-bold">
-                            {msg.type === "me" ? "You" : contact.name
+                            {msg.sender === "me" ? "You" : contact.name
                               .split(" ")
                               .map((n) => n[0])
                               .join("")
-                            } 
+                            }
                           </AvatarFallback>
                     </Avatar>
                   </div>
                 <div className="text-white text-sm font-semibold bg-white/20 w-fit p-2 rounded-lg backdrop-blur-sm">
-                  <p>{msg.content}</p>
+                  <p>{msg.content} {contactProfilePic() + "kl"}</p>
                 </div>
               </div>
               )}
@@ -422,9 +436,12 @@ export function VideoCallScreen({
                 onClick={() => setShowVideoChat(prev => !prev)}
                 variant="ghost"
                 size="icon"
-                className="w-12 h-12 rounded-full bg-white/10 border border-white/30 hover:bg-white/20"
+                className="w-12 h-12 rounded-full bg-white/10 border border-white/30 relative hover:bg-white/20"
               >
                 <MessageSquare className="w-5 h-5 text-white" />
+                {unreadVideoChatMessagesCount !== 0 && <div className="bg-red-500 rounded-full p-1 text-white absolute -top-2 -right-3 w-6 h-6 flex justify-center items-center">
+                  {unreadVideoChatMessagesCount}
+                </div>}
               </Button>
             </div>
             </div>

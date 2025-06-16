@@ -14,11 +14,11 @@ export function MainInterface({userInfo,onLogout}) {
   const [contacts, setContacts] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
   const [showAddContact, setShowAddContact] = useState(false)
-  const [callState, setCallState] = useState("video")
-  const [callingContact, setCallingContact] = useState({name : "Revanth",phone : "1234567890"});
+  const [callState, setCallState] = useState("none")
+  const [callingContact, setCallingContact] = useState(null);
   const [messages, setMessages] = useState([]);
   const [waiting,setWaiting] = useState(false);
-  const [callStatus, setCallStatus] = useState("connected")
+  const [callStatus, setCallStatus] = useState("connecting")
   const [isSidebarOpen,setIsSidebarOpen] = useState(true);
   const [remoteVideoStream,setRemoteVideoStream] = useState(null);
   const [localVideoStream,setLocalVideoStream] = useState(null);
@@ -30,6 +30,8 @@ export function MainInterface({userInfo,onLogout}) {
   const [isRemoteVideoOn,setIsRemoteVideoOn] = useState(true);
   const [isSwitchedVideos,setIsSwitchedVideos] = useState(false);
   const [videoChatMessages,setVideoChatMessages] = useState([]);
+  const [showVideoChat,setShowVideoChat] = useState(false);
+  const [unreadVideoChatMessagesCount,setUnreadVideoChatMessagesCount] = useState(0)
   // const [facingMode,setFacingMode]
 
   const peerInstance = useRef(null);
@@ -158,6 +160,7 @@ export function MainInterface({userInfo,onLogout}) {
                         status: "read",
                       }
                       setVideoChatMessages(prev => [...prev,message]);
+                      setUnreadVideoChatMessagesCount(prev => prev + 1)
                     }
                   }
                   else{
@@ -195,6 +198,12 @@ export function MainInterface({userInfo,onLogout}) {
   useEffect(() => {
     fetchContacts(userInfo._id);
   },[userInfo._id]);
+
+  useEffect(() => {
+    if(showVideoChat){
+      setUnreadVideoChatMessagesCount(0);
+    }
+  },[showVideoChat,unreadVideoChatMessagesCount])
 
   // useEffect(() => {
   //   console.log(isAudioAllowed,"kl")
@@ -291,6 +300,7 @@ export function MainInterface({userInfo,onLogout}) {
               status: "read",
             }
             setVideoChatMessages(prev => [...prev,message]);
+            setUnreadVideoChatMessagesCount(prev => prev + 1)
           }
         }
         else{
@@ -602,7 +612,7 @@ export function MainInterface({userInfo,onLogout}) {
     return <VideoCallScreen localVideoRef={localVideoRef} remoteVideoRef={remoteVideoRef} contact={callingContact} onEndCall={handleEndCall}  onAccept={handleAcceptCall}
         onDecline={handleDeclineCall} callStatus={callStatus} handleRemoteStreamMute={handleRemoteStreamMute} isMuted={isMuted} setIsMuted={setIsMuted} isAudioAllowed={isAudioAllowed}
         isLocalVideoOn={isLocalVideoOn} isRemoteVideoOn={isRemoteVideoOn} handleLocalVideoToggle={handleLocalVideoToggle} switchVideoStreams={switchVideoStreams} isSwitchedVideos={isSwitchedVideos}
-        sendVideoChatMessage={sendVideoChatMessage} videoChatMessages={videoChatMessages} />
+        sendVideoChatMessage={sendVideoChatMessage} videoChatMessages={videoChatMessages} showVideoChat={showVideoChat} setShowVideoChat={setShowVideoChat} unreadVideoChatMessagesCount={unreadVideoChatMessagesCount} userInfo={userInfo} />
   }
 
   // if ((callState === "incoming-audio" || callState === "incoming-video") && callingContact) {
