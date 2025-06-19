@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose,{ Schema }  from 'mongoose';
 
 // Define the schema
 const userSchema = new mongoose.Schema({
@@ -19,9 +19,10 @@ const userSchema = new mongoose.Schema({
   notificationRegistrationToken: {
     type:String,
   },
-  contacts :{
-    type : Array,
-  }
+  contacts: [{
+        type: Schema.Types.ObjectId,
+        ref: 'User' // This tells Mongoose the IDs in this array refer to documents in the 'User' collection.
+    }],
 });
 
 // Create a model from the schema

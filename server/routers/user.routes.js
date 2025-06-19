@@ -1,5 +1,5 @@
 import express from 'express'
-import { login,getPeerId, getContacts,logout,setNotificationRegistrationToken,requestUserConnection,changeUserStatus} from '../controllers/user.controller.js';
+import { login,getPeerId, getContacts,logout,setNotificationRegistrationToken,requestUserConnection,changeUserStatus,updateUserStatus} from '../controllers/user.controller.js';
 
 const router = express.Router();
 
@@ -23,5 +23,8 @@ router.route('/user/request')
 
 router.route('/user/status/change')
 	.post(changeUserStatus);
+
+router.route('/user/set/status')
+	.post(updateUserStatus)
 
 export default router

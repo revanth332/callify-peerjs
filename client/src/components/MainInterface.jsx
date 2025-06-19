@@ -9,6 +9,7 @@ import {Peer} from 'peerjs';
 import API from "@/services/API"
 import { Loader, MessageCircle } from "lucide-react"
 import { toast } from "sonner"
+import { io } from "socket.io-client"
 
 export function MainInterface({userInfo,onLogout}) {
   const [contacts, setContacts] = useState([]);
@@ -32,7 +33,8 @@ export function MainInterface({userInfo,onLogout}) {
   const [videoChatMessages,setVideoChatMessages] = useState([]);
   const [showVideoChat,setShowVideoChat] = useState(false);
   const [unreadVideoChatMessagesCount,setUnreadVideoChatMessagesCount] = useState(0);
-  // const [userStatus,setUserStatus] = useState("")
+  const socketRef = useRef(null);
+  const [userStatus,setUserStatus] = useState("")
   // const [facingMode,setFacingMode]
 
   const peerInstance = useRef(null);
@@ -51,16 +53,38 @@ export function MainInterface({userInfo,onLogout}) {
   //   if(userStatus === "offline"){
   //     setUserStatus("online");
   //     changeUserStatus();
-  //   }
-  //   timoutId = setTimeout(() => {
+  //     timoutId = setTimeout(() => {
   //       console.log("offline");
   //       setUserStatus("offline")
-  //     },[10000])
+  //     },[5000])
+  //     console.log("log")
+  //   }
+    
 
   //   return () => {
   //     clearTimeout(timoutId)
   //   }
   // })
+
+  // useEffect(() => {
+  //   const socket = io("http://localhost:8000");
+  //   socket.on("connect",() => {
+  //     console.log(socket.id,"socket connected");
+  //   });
+
+  //   socket.emit("join-user",userInfo._id);
+
+  //   socket.on("user-status",(userId,status) => {
+  //     console.log("user status triggered",userId,status,contacts,userId);
+  //     setContacts((prev) => prev.map(contact => contact._id === userId ? {...contact,status} : contact));
+  //   })
+
+  //   socket.on("disconnect", () => {
+  //     console.log(socket.id,"disconnected"); // undefined
+  //   });
+
+  //   socketRef.current = socket;
+  // },[userInfo._id,contacts])
 
   useEffect(() => {
     const peer = new Peer(userInfo.peerId);
