@@ -14,11 +14,11 @@ export function MainInterface({userInfo,onLogout}) {
   const [contacts, setContacts] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
   const [showAddContact, setShowAddContact] = useState(false)
-  const [callState, setCallState] = useState("video")
+  const [callState, setCallState] = useState("none")
   const [callingContact, setCallingContact] = useState({name : "Revanth",phone : "1234567890"});
   const [messages, setMessages] = useState([]);
   const [waiting,setWaiting] = useState(false);
-  const [callStatus, setCallStatus] = useState("connected")
+  const [callStatus, setCallStatus] = useState("connecting")
   const [isSidebarOpen,setIsSidebarOpen] = useState(true);
   const [remoteVideoStream,setRemoteVideoStream] = useState(null);
   const [localVideoStream,setLocalVideoStream] = useState(null);
@@ -196,6 +196,22 @@ export function MainInterface({userInfo,onLogout}) {
     fetchContacts(userInfo._id);
   },[userInfo._id]);
 
+  
+  useEffect(() => {
+    if (localVideoStream && remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = isSwitchedVideos ? localVideoStream : remoteVideoStream;
+    }
+    if (remoteVideoStream && localVideoRef.current) {
+      localVideoRef.current.srcObject = isSwitchedVideos ? remoteVideoStream : localVideoStream;
+    }
+  },[localVideoRef.current,isSwitched])
+
+  useEffect(() => {
+    if(remoteVideoRef.current){
+      remoteVideoRef.current.srcObject = remoteVideoStream;
+    }
+    console.log(remoteVideoRef.current)
+  },[remoteVideoRef.current])
   // useEffect(() => {
   //   console.log(isAudioAllowed,"kl")
   // },[isAudioAllowed])
@@ -322,15 +338,19 @@ export function MainInterface({userInfo,onLogout}) {
 
   const switchVideoStreams = () => {
     setIsSwitchedVideos(prev => !prev)
-    if (localVideoStream && remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = localVideoStream;
-    }
-    if (remoteVideoStream && localVideoRef.current) {
-      localVideoRef.current.srcObject = remoteVideoStream;
-    }
+    // setIsSwitchedVideos(prev => {
+    //   const isSwitched = !prev;
+    //   if (localVideoStream && remoteVideoRef.current) {
+    //   remoteVideoRef.current.srcObject = isSwitched ? localVideoStream : remoteVideoStream;
+    //   }
+    //   if (remoteVideoStream && localVideoRef.current) {
+    //     localVideoRef.current.srcObject = isSwitched ? remoteVideoStream : localVideoStream;
+    //   }
+    //   return isSwitched;
+    // })    
   }
 
-  const handleLocalVideoToggle = () => {
+  const handleLocalVideoToggle = () => {  
     connectionRef.current.send(JSON.stringify({type:"video-toggle",value : !isLocalVideoOn}));
     setIsLocalVideoOn(!isLocalVideoOn);
   }
@@ -615,7 +635,7 @@ export function MainInterface({userInfo,onLogout}) {
   // }
 
   return (
-    <div className="h-screen bg-[#E8CBC0]/10 flex">
+    <div className="h-lvh bg-[#E8CBC0]/10 flex">
       {/* Sidebar */}
       <ChatSidebar
         contacts={contacts}
