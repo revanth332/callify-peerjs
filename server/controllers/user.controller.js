@@ -98,20 +98,6 @@ export async function setNotificationRegistrationToken(req, res) {
 export async function requestUserConnection(req,res){
     try{
         const {userId} = req.body;
-        // const authHeader = req.headers.authorization;
-        // if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        //     return res.status(401).json({ message: 'Unauthorized' });
-        // }
-        // const idToken = authHeader.split(' ')[1];
-        // admin.auth().verifyIdToken(idToken)
-        // .then((decodedToken) => {
-        //     req.user = decodedToken;
-        //     next();
-        // })
-        // .catch((error) => {
-        //     console.error('Error verifying Firebase ID token:', error);
-        //     return res.status(401).json({ message: 'Unauthorized' });
-        // });
         const user = await User.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
@@ -133,5 +119,21 @@ export async function requestUserConnection(req,res){
     catch(err){
         console.log(err);
         return res.status(200).json({success : false ,message : "Filed to notify user"})
+    }
+}
+
+export async function changeUserStatus(req,res){
+    try{
+        const {userId,status} = req.body;
+        const user = await User.findOne({_id:userId});
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        user.status = status
+        await user.save();
+        return res.status(200).json({ message: 'Status changed successfully to '+status });
+    }
+    catch(err){
+        console.log(err);
     }
 }

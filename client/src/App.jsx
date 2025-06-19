@@ -12,6 +12,8 @@ export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userInfo,setUserInfo] = useState();
 
+
+
   // useEffect(() => {
   //   const token = generateToken();
   //   onMessage(messaging,(payload) => {
