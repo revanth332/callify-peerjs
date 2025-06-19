@@ -14,8 +14,11 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 app.use(urlencoded({ extended: false }));
 
+app.use("/api", userRouter);
 
-app.use('/api', userRouter);
+app.listen(port, () => {
+  console.log("server listening at port " + port);
+});
 
 httpServer.listen(port,() => {
     console.log("server listening at port "+port)

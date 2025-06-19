@@ -3,6 +3,8 @@ import { LoginScreen } from "@/components/LoginScreen"
 import { MainInterface } from "@/components/MainInterface"
 import API from "./services/API";
 import { generateToken } from "./notifications/firebase";
+import { toast } from "sonner"
+
 // import { generateToken,messaging } from "./notifications/firebase";
 // import {onMessage} from "firebase/messaging";
 
@@ -39,6 +41,7 @@ export default function App() {
       setIsLoggedIn(true)
     }
     catch(err){
+      toast.error("User name or phone number is incorrect");
       console.log(err);
     }
   }

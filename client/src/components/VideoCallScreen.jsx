@@ -284,7 +284,7 @@ export function VideoCallScreen({
                 {
                   ((isSwitchedVideos && isLocalVideoOn) || (!isSwitchedVideos && isRemoteVideoOn))
                   ? <video className="h-full w-full object-cover" ref={remoteVideoRef} muted={!isAudioAllowed} autoPlay />
-                  : <div className="text-center text-white border-2 border-white h-full w-full flex flex-col justify-center items-center">
+                  : <div className="text-center text-white h-full w-full flex flex-col justify-center items-center">
                       <Avatar className="w-48 h-48 mx-auto mb-4 border-4 border-white/20">
                         <AvatarImage src={contact.avatar || "/placeholder.svg"} />
                         <AvatarFallback className="bg-[#E8CBC0] text-[#636FA4] text-6xl font-bold">
@@ -332,16 +332,17 @@ export function VideoCallScreen({
           </div>
 
           {/* Local Video Feed (Picture-in-Picture) */}
-            <div ref={videoContainerRef} style={{left: position.x === -1 ? 'auto' : position.x, top: position.y === -1 ? 'auto' : position.y}} onClick={() => {console.log("click");switchVideoStreams()}} onMouseDown={handleDragStart} onTouchStart={handleDragStart} className="absolute bottom-24 right-4 w-32 h-24 bg-[#636FA4] rounded-lg border-2 border-white/20 shadow-lg overflow-hidden z-10">
+            <div ref={videoContainerRef} style={{left: position.x === -1 ? 'auto' : position.x, top: position.y === -1 ? 'auto' : position.y}} onClick={() => {console.log("click");switchVideoStreams()}} onMouseDown={handleDragStart} onTouchStart={handleDragStart} className="absolute bottom-24 right-4 w-32 h-40 bg-[#636FA4] rounded-lg border-2 border-white/20 shadow-lg overflow-hidden z-10">
               {((isSwitchedVideos && isRemoteVideoOn) || (!isSwitchedVideos && isLocalVideoOn)) ? (
-                <div className="h-full bg-gradient-to-br from-[#E8CBC0]/50 to-[#636FA4]/50 flex items-center justify-center">
-                  <video ref={localVideoRef} autoPlay muted />
+                <div className="h-full bg-gradient-to-br from-[#E8CBC0]/50 to-[#636FA4]/50">
+                  <video className="h-full w-full object-cover" ref={localVideoRef} autoPlay muted />
+                  
                 </div>
               ) : (
                 <div className="h-full bg-gray-800 flex flex-col items-center justify-center">
-                  <Avatar className="w-48 h-48 mx-auto mb-4 border-4 border-white/20">
+                  <Avatar className={`${isSwitchedVideos ? "w-48 h-48" : " w-14 h-14" }  mx-auto border-4 border-white/20`}>
                         <AvatarImage src={contact.avatar || "/placeholder.svg"} />
-                        <AvatarFallback className="bg-[#E8CBC0] text-[#636FA4] text-6xl font-bold">
+                        <AvatarFallback className={`bg-[#E8CBC0] text-[#636FA4] ${isSwitchedVideos ? " text-6xl" : "text-xl" } font-bold`}>
                           {(isSwitchedVideos && !isRemoteVideoOn) ? contact.name
                             .split(" ")
                             .map((n) => n[0])
@@ -383,7 +384,7 @@ export function VideoCallScreen({
               ? <div className="flex-1 ">
                   <input onKeyDown={(e) => e.key === "Enter" && sendVideoChatMessage(e)} type="text" placeholder="Type a message..." className="bg-transparent border-b w-full text-white border-white/30 focus:outline-none" />
                 </div>
-              : <div className="flex items-center gap-4">
+              : <div className="flex items-center gap-3">
                 {/* Mute Button */}
                 <Button
                   variant="ghost"

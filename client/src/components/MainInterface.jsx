@@ -376,15 +376,19 @@ export function MainInterface({userInfo,onLogout}) {
 
   const switchVideoStreams = () => {
     setIsSwitchedVideos(prev => !prev)
-    if (localVideoStream && remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = localVideoStream;
-    }
-    if (remoteVideoStream && localVideoRef.current) {
-      localVideoRef.current.srcObject = remoteVideoStream;
-    }
+    // setIsSwitchedVideos(prev => {
+    //   const isSwitched = !prev;
+    //   if (localVideoStream && remoteVideoRef.current) {
+    //   remoteVideoRef.current.srcObject = isSwitched ? localVideoStream : remoteVideoStream;
+    //   }
+    //   if (remoteVideoStream && localVideoRef.current) {
+    //     localVideoRef.current.srcObject = isSwitched ? remoteVideoStream : localVideoStream;
+    //   }
+    //   return isSwitched;
+    // })    
   }
 
-  const handleLocalVideoToggle = () => {
+  const handleLocalVideoToggle = () => {  
     connectionRef.current.send(JSON.stringify({type:"video-toggle",value : !isLocalVideoOn}));
     setIsLocalVideoOn(!isLocalVideoOn);
   }
@@ -669,7 +673,7 @@ export function MainInterface({userInfo,onLogout}) {
   // }
 
   return (
-    <div className="h-screen bg-[#E8CBC0]/10 flex">
+    <div className="h-lvh bg-[#E8CBC0]/10 flex">
       {/* Sidebar */}
       <ChatSidebar
         contacts={contacts}
