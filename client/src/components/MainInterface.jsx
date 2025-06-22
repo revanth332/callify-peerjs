@@ -66,25 +66,25 @@ export function MainInterface({userInfo,onLogout}) {
   //   }
   // })
 
-  // useEffect(() => {
-  //   const socket = io("http://localhost:8000");
-  //   socket.on("connect",() => {
-  //     console.log(socket.id,"socket connected");
-  //   });
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_SERVER_ORIGIN);
+    socket.on("connect",() => {
+      console.log("connected");
+    });
 
-  //   socket.emit("join-user",userInfo._id);
+    socket.emit("join-user",userInfo._id);
 
-  //   socket.on("user-status",(userId,status) => {
-  //     console.log("user status triggered",userId,status,contacts,userId);
-  //     setContacts((prev) => prev.map(contact => contact._id === userId ? {...contact,status} : contact));
-  //   })
+    socket.on("user-status",(userId,status) => {
+      // console.log("user status triggered",userId,status,contacts,userId);
+      setContacts((prev) => prev.map(contact => contact._id === userId ? {...contact,status} : contact));
+    })
 
-  //   socket.on("disconnect", () => {
-  //     console.log(socket.id,"disconnected"); // undefined
-  //   });
+    socket.on("disconnect", () => {
+      console.log("disconnected"); // undefined
+    });
 
-  //   socketRef.current = socket;
-  // },[userInfo._id,contacts])
+    socketRef.current = socket;
+  },[userInfo._id,contacts])
 
   useEffect(() => {
     const peer = new Peer(userInfo.peerId);

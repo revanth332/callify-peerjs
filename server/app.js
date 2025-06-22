@@ -16,9 +16,9 @@ app.use(urlencoded({ extended: false }));
 
 app.use("/api", userRouter);
 
-app.listen(port, () => {
-  console.log("server listening at port " + port);
-});
+// app.listen(port, () => {
+//   console.log("server listening at port " + port);
+// });
 
 httpServer.listen(port,() => {
     console.log("server listening at port "+port)

@@ -27,7 +27,8 @@ export function LoginScreen({ onLogin }) {
         {/* Logo and Branding */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#636FA4] rounded-full mb-4 shadow-lg">
-            <MessageCircle className="w-8 h-8 text-white" />
+            {/* <MessageCircle className="w-8 h-8 text-white" /> */}
+            <img className="rounded-full" src="callify_logo.png" alt="allify-logo" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Callify</h1>
           <p className="text-gray-700">Connect with friends and family</p>
@@ -56,7 +57,7 @@ export function LoginScreen({ onLogin }) {
                 Phone Number
               </Label>
               <div className="flex gap-2">
-                <Select value={countryCode} onValueChange={setCountryCode}>
+                {/* <Select value={countryCode} onValueChange={setCountryCode}>
                   <SelectTrigger className="w-24 h-12 border-[#E8CBC0] focus:border-[#636FA4]">
                     <SelectValue />
                   </SelectTrigger>
@@ -67,7 +68,7 @@ export function LoginScreen({ onLogin }) {
                     <SelectItem value="+86">🇨🇳 +86</SelectItem>
                     <SelectItem value="+49">🇩🇪 +49</SelectItem>
                   </SelectContent>
-                </Select>
+                </Select> */}
                 <div className="flex-1 relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <Input
